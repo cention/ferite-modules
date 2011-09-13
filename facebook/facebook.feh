@@ -1,0 +1,154 @@
+uses 'curl';
+uses 'console';
+uses 'JSON';
+
+namespace Facebook {
+	string GRAPH_URL = 'https://graph.facebook.com';
+	string FQL_URL = 'https://api.facebook.com/method/fql.query';
+	
+	class Request {
+		string accessToken;
+		function setAccessToken( string accessToken ) {
+			.accessToken = accessToken;
+		}
+	}
+	
+	class FQLRequest extends Request {
+		string query;
+		function setQuery( string query ) {
+			.query = query;
+		}
+		function run() {
+			object curl = new Curl.Curl();
+			string url;
+			array parameters = [];
+			array data;
+			
+			if( .accessToken ) {
+				parameters[] = 'access_token=' + .accessToken;
+			}
+			
+			//Console.println('Query: ' + .query);
+			
+			parameters[] = 'query=' + .query.urlEncode();
+			parameters[] = 'format=json-strings';
+			
+			url = Facebook.FQL_URL + '?' + parameters.join('&');
+			
+			//curl.setOption(Curl.CURLOPT_HEADERS, 1);
+			//curl.setOption(Curl.CURLOPT_VERBOSE, 1);
+			curl.setOption(Curl.CURLOPT_URL, url);
+			curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
+			curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
+			
+			if( curl.exec() ) {
+				string content = curl.getContent();
+				
+				monitor {
+					// data is defined at the top of the run function
+					//Console.println('Content: ' + content);
+					data = JSON.parse(content);
+				} handle {
+					raise new Error("Error when parsing response: ${content}");
+				}
+			} else {
+				raise new Error("Error when connecting to: ${url}");
+			}
+			
+			return data;
+		}
+	}
+	
+	class GraphRequest extends Request {
+		string path;
+		string method;
+		array parameters;
+		function setParameters( array values ) {
+			.parameters = values;
+		}
+		function run() {
+			object curl = new Curl.Curl();
+			array parameters = [];
+			string url;
+			object data = null;
+			
+			switch( .method ) {
+				case 'DELETE':
+					raise new Exception('DELETE not yet implemented.');
+					break;
+				case 'POST':
+					//raise new Exception('POST not yet implemented.');
+					curl.setOption(Curl.CURLOPT_POST, 1);
+					break;
+				case 'GET':
+				default:
+					/* Tobias 2011-08-17: This has not yet been implemented in
+					 * ferite curl module. Since it is the default it isn't
+					 * needed so I didn't bother implenting it myself.
+					 */
+					//curl.setOption(Curl.CURLOPT_HTTPGET, 1);
+					break;
+			}
+			
+			if( .accessToken ) {
+				parameters[] = 'access_token=' + .accessToken;
+			}
+			
+			.parameters.map() using ( key, value ) {
+				parameters[] = "${key}=${value}";
+			};
+			
+			if( .method == 'GET' ) {
+				url = Facebook.GRAPH_URL + .path + (parameters ? '?' + parameters.join('&') : '');
+			} else {
+				url = Facebook.GRAPH_URL + .path;
+				curl.setOption(Curl.CURLOPT_POSTFIELDS, parameters.join('&'));
+			}
+			
+			//Console.println('URL: ' + url);
+			
+			//curl.setOption(Curl.CURLOPT_HEADERS, 1);
+			//curl.setOption(Curl.CURLOPT_VERBOSE, 1);
+			curl.setOption(Curl.CURLOPT_URL, url);
+			curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
+			curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
+			
+			if( curl.exec() ) {
+				string content = curl.getContent();
+				
+				monitor {
+					// data is defined at the top of the run function
+					//Console.println('Content: ' + content);
+					data = JSON.parse(content);
+				} handle {
+					raise new Error("Error when parsing response: ${content}");
+				}
+			} else {
+				raise new Error("Error when connecting to: ${url}");
+			}
+			
+			return data;
+		}
+	}
+	
+	function fql() {
+		object fql = new Facebook.FQLRequest();
+		return fql;
+	}
+	function fql( string query ) {
+		object fql = new Facebook.FQLRequest();
+		fql.setQuery(query);
+		return r;
+	}
+	
+	function graph( string path ) {
+		return .graph(path, 'GET');
+	}
+	function graph( string path, string method ) {
+		object graph = new Facebook.GraphRequest();
+		graph.path = path;
+		graph.method = method;
+		return graph;
+	}
+}
+

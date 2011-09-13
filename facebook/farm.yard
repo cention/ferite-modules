@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<yard name="facebook">
+
+	<property id="name" value="ferite-module-facebook" />
+	<property id="version" value="3.2" />
+	
+	<collection id="facebook">
+		<property type="prefix" value="$(FeriteModuleSourceDir)" />  
+
+		<list type="source">
+			<file name="facebook.feh" />
+		</list>
+	</collection>
+
+	<phase id="install">
+		<perform action="install" target="facebook" />
+	</phase>
+</yard>
