@@ -64,8 +64,7 @@ namespace DNS
 			cp += i;
 			mx =  ferite_create_string_variable_from_ptr(script, "mx", buffer, 0, FE_CHARSET_DEFAULT, FE_STATIC);
 			ferite_uarray_push(script, mx_list->data.aval, mx);
-			/* if (weight_list) { */
-			/* } */
+			/* TODO: do something with weight */
 		}
 		FE_RETURN_VAR(mx_list);
 	}
