@@ -1,0 +1,99 @@
+uses 'DNS.lib';
+
+module-header
+{
+	#include <resolv.h>
+}
+
+namespace DNS
+{
+	native function getMX( string hostname ) {
+#ifndef MAXPACKET
+#define MAXPACKET  8192 /* max packet size used internally by BIND */
+#endif
+		int count;
+		int qdc;
+		u_short type;
+		u_short weight;
+		char buffer[MAXHOSTNAMELEN];
+		HEADER *hp;
+		u_char *cp;
+		u_char *end;
+		u_char response[MAXPACKET];
+		int i;
+
+		FeriteVariable *mx_list = ferite_create_uarray_variable(script, "list", 16, FE_STATIC);
+		FeriteVariable *mx = NULL;
+
+		MARK_VARIABLE_AS_DISPOSABLE(mx_list);
+
+		res_init();
+		i = res_search(hostname->data, C_IN, T_MX, response, sizeof(response));
+	
+		if (i < 0) {
+			/* RETURN_FALSE; */
+			/*printf("RETURN_FALSE\n");
+			FE_RETURN_FALSE;*/
+			FE_RETURN_VAR(mx_list);
+		}
+		if (i > (int)sizeof(response)) {
+			i = sizeof(response);
+		}
+		hp = (HEADER *)&response;
+		cp = (u_char *)&response + HFIXEDSZ;
+		end = (u_char *)&response +i;
+		for (qdc = ntohs((unsigned short)hp->qdcount); qdc--; cp += i + QFIXEDSZ) {
+			if ((i = dn_skipname(cp, end)) < 0 ) {
+				/* php_dns_free_handle(handle); */
+				/* RETURN_FALSE; */
+				/*printf("LINE: 36\n");
+				printf("RETURN_FALSE\n");
+				FE_RETURN_FALSE;*/
+				FE_RETURN_VAR(mx_list);
+			}
+		}
+		count = ntohs((unsigned short)hp->ancount);
+		while (--count >= 0 && cp < end) {
+			if ((i = dn_skipname(cp, end)) < 0 ) {
+				/* php_dns_free_handle(handle); */
+				/* RETURN_FALSE; */
+				/*printf("LINE: 46\n");
+				printf("RETURN_FALSE\n");
+				FE_RETURN_FALSE;*/
+				FE_RETURN_VAR(mx_list);
+			}
+			cp += i;
+			GETSHORT(type, cp);
+			cp += INT16SZ + INT32SZ;
+			GETSHORT(i, cp);
+			if (type != T_MX) {
+				cp += i;
+				continue;
+			}
+			GETSHORT(weight, cp);
+			if ((i = dn_expand(response, end, cp, buffer, sizeof(buffer)-1)) < 0) {
+				/* php_dns_free_handle(handle); */
+				/* RETURN_FALSE; */
+				/*printf("LINE: 62\n");
+				printf("RETURN_FALSE\n");
+				FE_RETURN_FALSE;*/
+				FE_RETURN_VAR(mx_list);
+			}
+			cp += i;
+			/* printf("Record: %s\n", buffer); */
+			mx =  ferite_create_string_variable_from_ptr(script, "mx", buffer, 0, FE_CHARSET_DEFAULT, FE_STATIC);
+			ferite_uarray_push(script, mx_list->data.aval, mx);
+			/* add_next_index_string(mx_list, buffer, 1); */
+			/* if (weight_list) { */
+				/* add_next_index_long(weight_list, weight); */
+			/* } */
+		}
+		/* php_dns_free_handle(handle); */
+		/* RETURN_FALSE; */
+		/*printf("RETURN_TRUE\n");
+		FE_RETURN_TRUE;*/
+		FE_RETURN_VAR(mx_list);
+	}
+
+}
+

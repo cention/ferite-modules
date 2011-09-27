@@ -1,0 +1,25 @@
+<?xml version="1.0" ?>
+<yard name="DNS">
+
+	<module id="DNS">
+		<list type="source">
+			<file name="DNS.fec" />
+		</list>
+		<property type="C">
+			<program-output program="ferite-config" arguments="--cflags" />
+		</property>
+		<property type="LD">
+			<program-output program="ferite-config" arguments="--libs" />
+		</property>
+		<add-property type="LD" value="-lresolv" />
+		<property type="prefix" value="$(FeriteModuleNativeDir)" />        
+	</module>
+	    
+	<phase id="install" depends="build">
+		<perform action="install" target="DNS" />
+		<copy file="DNS.fec" target="$(FeriteModuleSourceDir)" />
+		<copy file="$(ProductDir)/DNS.xml" target="$(FeriteModuleDescriptionDir)" />
+	</phase>
+    
+</yard>
+
