@@ -28,6 +28,8 @@ namespace Facebook {
 				parameters[] = 'access_token=' + .accessToken;
 			}
 			
+			// Uncomment this to print debug output with the query being
+			// run at the FQL ehm, erm, runner.
 			//Console.println('Query: ' + .query);
 			
 			parameters[] = 'query=' + .query.urlEncode();
@@ -35,8 +37,10 @@ namespace Facebook {
 			
 			url = Facebook.FQL_URL + '?' + parameters.join('&');
 			
-			//curl.setOption(Curl.CURLOPT_HEADERS, 1);
+			// Uncomment this to print debug output from Curl.
+			// This allows you to see what is being sent and recieved in detail.
 			//curl.setOption(Curl.CURLOPT_VERBOSE, 1);
+			
 			curl.setOption(Curl.CURLOPT_URL, url);
 			curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
 			curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
@@ -45,8 +49,9 @@ namespace Facebook {
 				string content = curl.getContent();
 				
 				monitor {
-					// data is defined at the top of the run function
+					// Uncomment the below to print debug output with the received content.
 					//Console.println('Content: ' + content);
+					// data is defined at the top of the run function
 					data = JSON.parse(content);
 				} handle {
 					raise new Error("Error when parsing response: ${content}");
@@ -105,10 +110,13 @@ namespace Facebook {
 				curl.setOption(Curl.CURLOPT_POSTFIELDS, parameters.join('&'));
 			}
 			
+			// Uncomment this to print debug output for the request URL.
 			//Console.println('URL: ' + url);
 			
-			//curl.setOption(Curl.CURLOPT_HEADERS, 1);
+			// Uncomment this to print debug output from Curl.
+			// This allows you to see what is being sent and recieved in detail.
 			//curl.setOption(Curl.CURLOPT_VERBOSE, 1);
+			
 			curl.setOption(Curl.CURLOPT_URL, url);
 			curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
 			curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
@@ -117,8 +125,9 @@ namespace Facebook {
 				string content = curl.getContent();
 				
 				monitor {
-					// data is defined at the top of the run function
+					// Uncomment the below to print debug output with the received content.
 					//Console.println('Content: ' + content);
+					// data is defined at the top of the run function
 					data = JSON.parse(content);
 				} handle {
 					raise new Error("Error when parsing response: ${content}");
