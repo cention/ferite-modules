@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <yard name="facebook">
 
-	<property id="name" value="ferite-module-facebook" />
+	<property id="name" value="cention-facebook" />
 	<property id="version" value="3.2" />
 	
 	<collection id="facebook">
