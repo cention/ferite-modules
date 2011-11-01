@@ -1,0 +1,7 @@
+uses 'DNS';
+uses 'console';
+
+array list = DNS.getMX('gmail.com');
+list.each() using ( mx ) {
+	Console.println('MX: ' + mx);
+};

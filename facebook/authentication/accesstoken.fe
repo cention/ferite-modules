@@ -1,0 +1,32 @@
+uses 'apache';
+
+namespace Application {
+	object request;
+	array query;
+	
+	function print( string text ) {
+		Application.request.print(text + "\n");
+	}
+	function run() {
+		Application.request = Request.current();
+		Application.query = Application.request.query();
+	}
+}
+
+Application.run();
+
+Application.print('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">');
+Application.print('<html>');
+Application.print('<head>');
+Application.print('<meta http-equiv="Content-Type" content="text/html;charset=utf-8">');
+Application.print('<title>Cention Suite - Facebook Access Token Middle Handler</title>');
+Application.print('</head>');
+Application.print('<body>');
+Application.print('<input id="redirect_uri" type="hidden" value="' + Application.query['redirect_uri'] + '" />');
+Application.print('<script type="text/javascript">');
+Application.print('	setTimeout(function() {');
+Application.print('		window.location = (document.getElementById("redirect_uri").value + window.location.hash);');
+Application.print('	}, 100);');
+Application.print('</script>');
+Application.print('</body>');
+Application.print('</html>');
