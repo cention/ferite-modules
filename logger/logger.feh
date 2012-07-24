@@ -48,7 +48,7 @@ namespace Logger {
 	 * @variable APPLICATION_UPDATE
 	 * @type string
 	 */
-	string APPLICATION_SEND = 'update';
+	string APPLICATION_UPDATE = 'update';
 	
 	array loggers;
 	function getLogger( string application ) {
