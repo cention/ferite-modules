@@ -1,6 +1,9 @@
 <?xml version="1.0" ?>
 <yard name="DNS">
 
+	<property id="name" value="cention-dns" />
+	<property id="version" value="3.2" />
+
 	<module id="DNS">
 		<list type="source">
 			<file name="DNS.fec" />
@@ -14,12 +17,12 @@
 		<add-property type="LD" value="-lresolv" />
 		<property type="prefix" value="$(FeriteModuleNativeDir)" />        
 	</module>
-	    
+
 	<phase id="install" depends="build">
 		<perform action="install" target="DNS" />
 		<copy file="DNS.fec" target="$(FeriteModuleSourceDir)" />
 		<copy file="$(ProductDir)/DNS.xml" target="$(FeriteModuleDescriptionDir)" />
 	</phase>
-    
+
 </yard>
 

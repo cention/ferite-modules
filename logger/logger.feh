@@ -1,0 +1,159 @@
+/**
+ * @namespace Logger
+ * @brief Holds functions to help with logging inside applications
+ * @description All messages is sent to a syslog server running in the background. For live servers the syslog server sends the messages to a master logging server
+ */
+namespace Logger {
+	/**
+	 * @variable APPLICATION_WORKFLOW
+	 * @type string
+	 */
+	string APPLICATION_WORKFLOW = 'workflow';
+	/**
+	 * @variable APPLICATION_REPORTS
+	 * @type string
+	 */
+	string APPLICATION_REPORTS = 'reports';
+	/**
+	 * @variable APPLICATION_EXPORTS
+	 * @type string
+	 */
+	string APPLICATION_EXPORTS = 'exports';
+	/**
+	 * @variable APPLICATION_LIBRARY
+	 * @type string
+	 */
+	string APPLICATION_LIBRARY = 'library';
+	/**
+	 * @variable APPLICATION_OUTBOUND
+	 * @type string
+	 */
+	string APPLICATION_OUTBOUND = 'outbound';
+	/**
+	 * @variable APPLICATION_CHAT
+	 * @type string
+	 */
+	string APPLICATION_CHAT = 'chat';
+	/**
+	 * @variable APPLICATION_FETCH
+	 * @type string
+	 */
+	string APPLICATION_FETCH = 'fetch';
+	/**
+	 * @variable APPLICATION_SEND
+	 * @type string
+	 */
+	string APPLICATION_SEND = 'send';
+	/**
+	 * @variable APPLICATION_UPDATE
+	 * @type string
+	 */
+	string APPLICATION_SEND = 'update';
+	
+	array loggers;
+	function getLogger( string application ) {
+		if( not .loggers.keyExists(application) ) {
+			.loggers[application] = Unix.openlog(application, Unix.LOG_NDELAY, Unix.LOG_LOCAL1);
+		}
+		return .loggers[application];
+	}
+	/**
+	 * @function debug
+	 * @decleration function debug( string application, string text )
+	 * @brief Debug-level messages
+	 * @param string application The name of application which generates this message
+	 * @param string text The message text to log
+	 * @description Info useful to developers for debugging the application, not useful during operations
+	 */
+	function debug( string application, string text ) {
+		object logger = .getLogger(application);
+		logger.debug(text);
+	}
+	/**
+	 * @function info
+	 * @decleration function info( string application, string text )
+	 * @brief Informational messages
+	 * @param string application The name of application which generates this message
+	 * @param string text The message text to log
+	 * @description Normal operational messages - may be harvested for reporting, measuring throughput, etc. - no action required
+	 */
+	function info( string application, string text ) {
+		object logger = .getLogger(application);
+		logger.info(text);
+	}
+	/**
+	 * @function notice
+	 * @decleration function notice( string application, string text )
+	 * @brief Normal but significant condition
+	 * @param string application The name of application which generates this message
+	 * @param string text The message text to log
+	 * @description Events that are unusual but not error conditions - might be summarized in an email to developers or admins to spot potential problems - no immediate action required
+	 */
+	function notice( string application, string text ) {
+		object logger = .getLogger(application);
+		logger.notice(text);
+	}
+	/**
+	 * @function warning
+	 * @decleration function warning( string application, string text )
+	 * @brief Warning conditions
+	 * @param string application The name of application which generates this message
+	 * @param string text The message text to log
+	 * @description Warning messages, not an error, but indication that an error will occur if action is not taken, e.g. file system 85% full - each item must be resolved within a given time
+	 */
+	function warning( string application, string text ) {
+		object logger = .getLogger(application);
+		logger.warning(text);
+	}
+	/**
+	 * @function error
+	 * @decleration function error( string application, string text )
+	 * @brief Error conditions
+	 * @param string application The name of application which generates this message
+	 * @param string text The message text to log
+	 * @description Non-urgent failures, these should be relayed to developers or admins; each item must be resolved within a given time
+	 */
+	function error( string application, string text ) {
+		object logger = .getLogger(application);
+		logger.error(text);
+	}
+	/**
+	 * @function critical
+	 * @decleration function critical( string application, string text )
+	 * @brief Should be corrected immediately, but indicates failure in a primary system, an example is a loss of primary ISP connection
+	 * @param string application The name of application which generates this message
+	 * @param string text The message text to log
+	 * @description Should be corrected immediately, but indicates failure in a primary system, an example is a loss of primary ISP connection
+	 */
+	function critical( string application, string text ) {
+		object logger = .getLogger(application);
+		logger.critical(text);
+	}
+	/**
+	 * @function alert
+	 * @decleration function alert( string application, string text )
+	 * @brief Action must be taken immediately
+	 * @param string application The name of application which generates this message
+	 * @param string text The message text to log
+	 * @description Should be corrected immediately, therefore notify staff who can fix the problem. An example would be the loss of a backup ISP connection
+	 */
+	function alert( string application, string text ) {
+		object logger = .getLogger(application);
+		logger.alert(text);
+	}
+	/**
+	 * @function emerg
+	 * @decleration function emerg( string application, string text )
+	 * @brief System is unusable
+	 * @param string application The name of application which generates this message
+	 * @param string text The message text to log
+	 * @description A "panic" condition usually affecting multiple apps/servers/sites. At this level it would usually notify all tech staff on call
+	 */
+	function emerg( string application, string text ) {
+		object logger = .getLogger(application);
+		logger.emerg(text);
+	}
+}
+/**
+ * @end
+ */
