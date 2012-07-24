@@ -1,9 +1,16 @@
+uses 'unix';
+
 /**
  * @namespace Logger
  * @brief Holds functions to help with logging inside applications
  * @description All messages is sent to a syslog server running in the background. For live servers the syslog server sends the messages to a master logging server
  */
 namespace Logger {
+	/**
+	 * @variable APPLICATION_AUTH
+	 * @type string
+	 */
+	string APPLICATION_AUTH = 'auth';
 	/**
 	 * @variable APPLICATION_WORKFLOW
 	 * @type string
