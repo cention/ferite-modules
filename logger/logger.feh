@@ -12,6 +12,11 @@ namespace Logger {
 	 */
 	string APPLICATION_AUTH = 'auth';
 	/**
+	 * @variable APPLICATION_ADMIN
+	  *@type string
+	 */
+	string APPLICATION_ADMIN = 'administration';
+	/**
 	 * @variable APPLICATION_WORKFLOW
 	 * @type string
 	 */
