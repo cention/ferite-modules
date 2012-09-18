@@ -1,0 +1,88 @@
+uses 'console';
+uses 'SOAP';
+
+
+class AddRequestResult {
+	number EWT;
+	number OpenMediaID;
+	number QueuePosition;
+	number RequestStatus;
+	
+	[rpc_import 'EWT:number', 'OpenMediaID:number', 'QueuePosition:number', 'RequestStatus:string'];
+}
+
+namespace Solidus {
+
+class IVRInformation {
+	string Label;
+	string Data;
+	
+	constructor( string label, string data ) {
+		.Label = label;
+		.Data = data;
+	}
+	
+	function getName() {
+		return 'IVRInformation';
+	}
+	
+	[rpc_export Label, Data];
+}
+
+
+
+function addRequest ( object errand ) {
+
+	object result;
+	array parameters;
+        number GetOpenMediaId;
+
+	object fullArea = Workflow.Area.load(errand.targetArea.id);
+	
+	parameters['ForceToPreferredAgent'] = false;
+	parameters['IVRInfo'] = [ new Solidus.IVRInformation('label1', 'data1'), new Solidus.IVRInformation(), new Solidus.IVRInformation() ];
+	parameters['PreferredAgentID'] = 0;
+	parameters['PrivateData'] = "http://localhost/Cention/workflow/#/answer/" + errand.id;
+	parameters['ServiceGroupID'] = fullArea.solidusServiceGroupID;
+	parameters['ServiceGroupName'] = '';
+	parameters['TenantID'] = -1;
+	
+	
+	result = SOAP.RPC.invoke(
+		  'http://82.99.12.92:12615/OpenMediaService',
+		  'http://tempuri.org/IOpenMediaService/AddRequest',
+		  'AddRequest',
+		  parameters,
+		  'AddRequestResult',
+		  'AddRequestResult'
+	);
+        GetOpenMediaId = result.OpenMediaID;
+        
+	return GetOpenMediaId;
+}
+
+
+function CancelRequest (object errand ) {
+
+	boolean cancelRequestStatus;
+	array cancelRequestparameter;
+	
+	cancelRequestparameter['OpenMediaID'] = errand.solidusOpenMediaId;
+	cancelRequestparameter['CancelIfAllocated'] = 1;
+	cancelRequestparameter['DoNotReport'] = 0;
+
+
+	cancelRequestStatus = SOAP.RPC.invoke(
+		'http://82.99.12.92:12615/OpenMediaService',
+		'http://tempuri.org/IOpenMediaService/CancelRequest',
+		'CancelRequest',
+		cancelRequestparameter,
+		'boolean',
+		'CancelRequestResult'
+	);
+
+
+	return cancelRequestStatus;
+}
+
+}
