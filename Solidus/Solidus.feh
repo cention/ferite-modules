@@ -1,0 +1,128 @@
+uses 'console';
+uses 'SOAP';
+uses 'logger';
+
+class AddRequestResult {
+	number EWT;
+	number OpenMediaID;
+	number QueuePosition;
+	number RequestStatus;
+	
+	[rpc_import 'EWT:number', 'OpenMediaID:number', 'QueuePosition:number', 'RequestStatus:string'];
+}
+class GetOpenMediaRequestStatusByIDResult{
+	array OpenMediaRequests;
+        string TimeStamp;
+        
+	[rpc_import 'OpenMediaRequests:array<OpenMediaRequest>' , 'TimeStamp:string'];	
+}
+class OpenMediaRequest {
+            
+	[rpc_import 'AgentID:number', 'ID:number' , 'LogonID:number' , 'Status:string' , 'TenantID:number' , 'TimeStamp:string'];
+}
+
+namespace Solidus {
+
+class IVRInformation {
+	string Label;
+	string Data;
+	
+	constructor( string label, string data ) {
+		.Label = label;
+		.Data = data;
+	}
+	
+	function getName() {
+		return 'IVRInformation';
+	}
+	
+	[rpc_export Label, Data];
+}
+
+
+
+function addRequest ( object errand , number preferredAgentId) {
+
+	object result;
+	array parameters;
+        number GetOpenMediaId;
+
+	object fullArea = Workflow.Area.load(errand.targetArea.id);
+	
+	parameters['ForceToPreferredAgent'] = false;
+	parameters['IVRInfo'] = [ new Solidus.IVRInformation('label1', 'data1'), new Solidus.IVRInformation(), new Solidus.IVRInformation() ];
+	parameters['PreferredAgentID'] = preferredAgentId;
+	parameters['PrivateData'] = "http://localhost/Cention/workflow/#/answer/" + errand.id;
+	parameters['ServiceGroupID'] = fullArea.solidusServiceGroupID;
+	parameters['ServiceGroupName'] = '';
+	parameters['TenantID'] = -1;
+	
+	monitor {
+		result = SOAP.RPC.invoke(
+			  F('solidus.address') + '/OpenMediaService',
+			  F('solidus.url') + '/IOpenMediaService/AddRequest',
+			  'AddRequest',
+			  parameters,
+			  'AddRequestResult',
+			  'AddRequestResult'
+		);
+		GetOpenMediaId = result.OpenMediaID;
+	}handle{
+		Logger.debug(Logger.APPLICATION_SOLIDUS, "${err.str}");
+	}      
+	return GetOpenMediaId;
+}
+
+
+function CancelRequest (object errand ) {
+
+	boolean cancelRequestStatus;
+	array cancelRequestparameter;
+	
+	cancelRequestparameter['OpenMediaID'] = errand.solidusOpenMediaId;
+	cancelRequestparameter['CancelIfAllocated'] = 1;
+	cancelRequestparameter['DoNotReport'] = 0;
+
+        monitor {
+		cancelRequestStatus = SOAP.RPC.invoke(
+			F('solidus.address') + '/OpenMediaService',
+			F('solidus.url') + '/IOpenMediaService/CancelRequest',
+			'CancelRequest',
+			cancelRequestparameter,
+			'boolean',
+			'CancelRequestResult'
+		);
+	}handle{
+		Logger.debug(Logger.APPLICATION_SOLIDUS, "${err.str}");
+	}
+	return cancelRequestStatus;
+}
+
+
+function GetOpenMediaRequestStatus( object errand ){
+	object status;
+	array parameters;
+	string getStatusOfOpenMedia;
+
+	parameters['openMediaID'] = errand.solidusOpenMediaId;
+	monitor {
+		status = SOAP.RPC.invoke(
+			'http://82.99.12.92:12615/OpenMediaService',
+			'http://tempuri.org/IOpenMediaService/GetOpenMediaRequestStatusByID',
+			'GetOpenMediaRequestStatusByID',
+			parameters,
+			'GetOpenMediaRequestStatusByIDResult',
+			'GetOpenMediaRequestStatusByIDResult'
+		);
+		
+		status.OpenMediaRequests.each() using ( message ) {
+			getStatusOfOpenMedia = message.Status;	
+		};     
+			
+	}handle{
+		Logger.debug(Logger.APPLICATION_SOLIDUS, "${err.str}");
+	}
+        return getStatusOfOpenMedia;
+}
+
+}
