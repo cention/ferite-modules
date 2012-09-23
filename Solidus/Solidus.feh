@@ -68,7 +68,7 @@ function addRequest ( object errand , number preferredAgentId) {
 		);
 		GetOpenMediaId = result.OpenMediaID;
 	}handle{
-		Logger.debug(Logger.APPLICATION_SOLIDUS, "${err.str}");
+		Logger.debug(Logger.APPLICATION_SOLIDUS, " !!! Error:(${err.str}) for Workflow.Errand(${errand.id})");
 	}      
 	return GetOpenMediaId;
 }
@@ -93,13 +93,13 @@ function CancelRequest (object errand ) {
 			'CancelRequestResult'
 		);
 	}handle{
-		Logger.debug(Logger.APPLICATION_SOLIDUS, "${err.str}");
+		Logger.debug(Logger.APPLICATION_SOLIDUS, " !!! Error:(${err.str}) for Workflow.Errand(${errand.id})");
 	}
 	return cancelRequestStatus;
 }
 
 
-function GetOpenMediaRequestStatus( object errand ){
+function getOpenMediaRequestStatus( object errand ){
 	object status;
 	array parameters;
 	string getStatusOfOpenMedia;
@@ -107,8 +107,8 @@ function GetOpenMediaRequestStatus( object errand ){
 	parameters['openMediaID'] = errand.solidusOpenMediaId;
 	monitor {
 		status = SOAP.RPC.invoke(
-			'http://82.99.12.92:12615/OpenMediaService',
-			'http://tempuri.org/IOpenMediaService/GetOpenMediaRequestStatusByID',
+		       F('solidus.address') + '/OpenMediaService',
+	               F('solidus.url') + '/IOpenMediaService/GetOpenMediaRequestStatusByID',
 			'GetOpenMediaRequestStatusByID',
 			parameters,
 			'GetOpenMediaRequestStatusByIDResult',
@@ -120,7 +120,7 @@ function GetOpenMediaRequestStatus( object errand ){
 		};     
 			
 	}handle{
-		Logger.debug(Logger.APPLICATION_SOLIDUS, "${err.str}");
+		Logger.debug(Logger.APPLICATION_SOLIDUS, " !!! Error:(${err.str}) for Workflow.Errand(${errand.id})");
 	}
         return getStatusOfOpenMedia;
 }
