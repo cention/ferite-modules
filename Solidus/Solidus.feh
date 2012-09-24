@@ -10,18 +10,24 @@ class AddRequestResult {
 	
 	[rpc_import 'EWT:number', 'OpenMediaID:number', 'QueuePosition:number', 'RequestStatus:string'];
 }
-class GetOpenMediaRequestStatusByIDResult{
+
+class GetOpenMediaRequestStatusByIDResult {
 	array OpenMediaRequests;
-        string TimeStamp;
+	string TimeStamp;
         
-	[rpc_import 'OpenMediaRequests:array<OpenMediaRequest>' , 'TimeStamp:string'];	
-}
-class OpenMediaRequest {
-            
-	[rpc_import 'AgentID:number', 'ID:number' , 'LogonID:number' , 'Status:string' , 'TenantID:number' , 'TimeStamp:string'];
+	[rpc_import 'OpenMediaRequests:array<OpenMediaRequest>' , 'TimeStamp:string'];
 }
 
-namespace Solidus {
+class OpenMediaRequest {
+	number ID;
+	number AgentID;
+	number LogonID;
+	string Status;
+	number TenantID;
+	number TimeStamp;
+	
+	[rpc_import 'AgentID:number', 'ID:number' , 'LogonID:number' , 'Status:string' , 'TenantID:number' , 'TimeStamp:string'];
+}
 
 class IVRInformation {
 	string Label;
@@ -32,97 +38,96 @@ class IVRInformation {
 		.Data = data;
 	}
 	
-	function getName() {
-		return 'IVRInformation';
-	}
-	
 	[rpc_export Label, Data];
 }
 
-
-
-function addRequest ( object errand , number preferredAgentId) {
-
-	object result;
-	array parameters;
-        number GetOpenMediaId;
-
-	object fullArea = Workflow.Area.load(errand.targetArea.id);
+namespace Solidus {
+	function addRequest( object errand, number preferredAgentID ) {
+		number GetOpenMediaId;
+		object area = Workflow.Area.load(errand.targetArea.id);	
 	
-	parameters['ForceToPreferredAgent'] = false;
-	parameters['IVRInfo'] = [ new Solidus.IVRInformation('label1', 'data1'), new Solidus.IVRInformation(), new Solidus.IVRInformation() ];
-	parameters['PreferredAgentID'] = preferredAgentId;
-	parameters['PrivateData'] = "http://localhost/Cention/workflow/#/answer/" + errand.id;
-	parameters['ServiceGroupID'] = fullArea.solidusServiceGroupID;
-	parameters['ServiceGroupName'] = '';
-	parameters['TenantID'] = -1;
-	
-	monitor {
-		result = SOAP.RPC.invoke(
-			  F('solidus.address') + '/OpenMediaService',
-			  F('solidus.url') + '/IOpenMediaService/AddRequest',
-			  'AddRequest',
-			  parameters,
-			  'AddRequestResult',
-			  'AddRequestResult'
-		);
-		GetOpenMediaId = result.OpenMediaID;
-	}handle{
-		Logger.debug(Logger.APPLICATION_SOLIDUS, " !!! Error:(${err.str}) for Workflow.Errand(${errand.id})");
-	}      
-	return GetOpenMediaId;
-}
+		monitor {
+			object result;
+			array parameters;
 
+			parameters['ForceToPreferredAgent'] = false;
+			parameters['IVRInfo'] = [ new IVRInformation('label1', 'data1'), new IVRInformation(), new IVRInformation() ];
+			parameters['PreferredAgentID'] = preferredAgentId;
+			parameters['PrivateData'] = F('solidus.open-errand-url') + '/workflow/-/answer/' + errand.id;
+			parameters['ServiceGroupID'] = area.solidusServiceGroupID;
+			parameters['ServiceGroupName'] = '';
+			parameters['TenantID'] = -1;
 
-function CancelRequest (object errand ) {
-
-	boolean cancelRequestStatus;
-	array cancelRequestparameter;
-	
-	cancelRequestparameter['OpenMediaID'] = errand.solidusOpenMediaId;
-	cancelRequestparameter['CancelIfAllocated'] = 1;
-	cancelRequestparameter['DoNotReport'] = 0;
-
-        monitor {
-		cancelRequestStatus = SOAP.RPC.invoke(
-			F('solidus.address') + '/OpenMediaService',
-			F('solidus.url') + '/IOpenMediaService/CancelRequest',
-			'CancelRequest',
-			cancelRequestparameter,
-			'boolean',
-			'CancelRequestResult'
-		);
-	}handle{
-		Logger.debug(Logger.APPLICATION_SOLIDUS, " !!! Error:(${err.str}) for Workflow.Errand(${errand.id})");
-	}
-	return cancelRequestStatus;
-}
-
-
-function getOpenMediaRequestStatus( object errand ){
-	object status;
-	array parameters;
-	string getStatusOfOpenMedia;
-
-	parameters['openMediaID'] = errand.solidusOpenMediaId;
-	monitor {
-		status = SOAP.RPC.invoke(
-		       F('solidus.address') + '/OpenMediaService',
-	               F('solidus.url') + '/IOpenMediaService/GetOpenMediaRequestStatusByID',
-			'GetOpenMediaRequestStatusByID',
-			parameters,
-			'GetOpenMediaRequestStatusByIDResult',
-			'GetOpenMediaRequestStatusByIDResult'
-		);
+			result = SOAP.RPC.invoke(
+				  F('solidus.server-address') + '/OpenMediaService',
+				  F('solidus.soap-action-url') + '/IOpenMediaService/AddRequest',
+				  'AddRequest',
+				  parameters,
+				  'AddRequestResult',
+				  'AddRequestResult'
+			);
 		
-		status.OpenMediaRequests.each() using ( message ) {
-			getStatusOfOpenMedia = message.Status;	
-		};     
-			
-	}handle{
-		Logger.debug(Logger.APPLICATION_SOLIDUS, " !!! Error:(${err.str}) for Workflow.Errand(${errand.id})");
+			GetOpenMediaId = result.OpenMediaID;
+		} handle {
+			Logger.debug(Logger.APPLICATION_SOLIDUS, " !!! Error:(${err.str}) for Workflow.Errand(${errand.id})");
+		}
+	
+		return GetOpenMediaId;
 	}
-        return getStatusOfOpenMedia;
+
+
+	function CancelRequest( object errand ) {
+		boolean status;
+	
+		monitor {
+			array parameters;
+		
+			parameters['OpenMediaID'] = errand.solidusOpenMediaId;
+			parameters['CancelIfAllocated'] = 1;
+			parameters['DoNotReport'] = 0;
+		
+			status = SOAP.RPC.invoke(
+				F('solidus.server-address') + '/OpenMediaService',
+				F('solidus.soap-action-url') + '/IOpenMediaService/CancelRequest',
+				'CancelRequest',
+				parameters,
+				'boolean',
+				'CancelRequestResult'
+			);
+		} handle {
+			Logger.debug(Logger.APPLICATION_SOLIDUS, " !!! Error:(${err.str}) for Workflow.Errand(${errand.id})");
+		}
+	
+		return status;
+	}
+
+	function getOpenMediaRequestStatus( object errand ) {
+		string getStatusOfOpenMedia;
+
+		monitor {
+			array parameters;
+			object status;
+		
+			parameters['openMediaID'] = errand.solidusOpenMediaID;
+			
+			status = SOAP.RPC.invoke(
+				F('solidus.server-address') + '/OpenMediaService',
+				F('solidus.soap-action-url') + '/IOpenMediaService/GetOpenMediaRequestStatusByID',
+				'GetOpenMediaRequestStatusByID',
+				parameters,
+				'GetOpenMediaRequestStatusByIDResult',
+				'GetOpenMediaRequestStatusByIDResult'
+			);
+
+			status.OpenMediaRequests.each() using ( message ) {
+				getStatusOfOpenMedia = message.Status;	
+			};     
+
+		} handle {
+			Logger.debug(Logger.APPLICATION_SOLIDUS, " !!! Error:(${err.str}) for Workflow.Errand(${errand.id})");
+		}
+	
+		return getStatusOfOpenMedia;
+	}
 }
 
-}
