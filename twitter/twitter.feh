@@ -1,0 +1,168 @@
+uses 'curl';
+uses 'console';
+uses "xml";
+uses "array","date",'math','sys','MHash','regexp';
+uses "string", "JSON";
+
+/**
+   * Created @Mujibur Rahman 
+   * Email: mujibur.rahman@cention.se
+   * Dated: 24-09-2012
+   * Name: Twitter module which will be able to Authenticate, Authorize, 
+   * Fetch Mention message and Post messages on time line.
+**/
+
+namespace modifies String {
+    function urlDecode( string encoded ) {
+        string decoded;
+        number i = 0;
+        number max = encoded.length() - 6;
+        while( i <= max ) {
+			string character = encoded[i];
+			if( character == '%' and encoded[i + 1] == 'u' ) {
+				number start = i + 2;
+				number end = start + 4;
+				number value = String.hexStringToNumber((end < encoded.length() ? encoded[start..end] : encoded[start..]));
+				i += 6;						   
+				if( value < 0x0080 ) { // 1 byte: 0xxxxxxx
+						character = String.numberToByte(value);
+				} else if( value < 0x0800 ) { // 2 bytes: 110xxxxx 10xxxxxx
+						character = String.numberToByte(((value & 0x07c0) >> 6) | 0xc0) +
+									String.numberToByte((value & 0x3f) | 0x80);
+				} else { // 3 bytes: 1110xxxx 10xxxxxx 10xxxxxx
+						character = String.numberToByte(((value & 0xf000) >> 12) | 0xe0) + 
+									String.numberToByte(((value & 0x0fc0) >> 6) | 0x80) + 
+									String.numberToByte((value & 0x3f) | 0x80);
+				}
+			} else {
+				i++;
+			}
+				   
+			decoded += character;
+		}
+        return decoded + (i < encoded.length() ? encoded[i..] : '');
+    }
+}
+namespace modifies Array {
+	function ksort( array values ) {
+		array result = [];
+		array keys = values.keys();
+		keys = keys.sort() using ( a, b ) {
+			return String.orderedCompare(a, b);
+		};
+		keys.each() using ( key ) {
+			result[key] = values[key];
+		};
+		return result;
+	}
+}
+namespace Twitter {
+	class TwitterMain {	  
+		constructor(){
+		}		
+		function buildBaseString(string baseURI, array params, string method){
+			array tempArray;	
+			string url;
+			string parameters;
+			string encodeValue;
+			params = params.ksort();
+			params.eachWithIndex() using ( value, index ){
+				string key;
+				key = params.getName(index); 
+				encodeValue = String.urlEncode( ''+value );
+				tempArray[] = key + "=" + encodeValue;
+			};
+			url = String.urlEncode( baseURI );
+			parameters = tempArray.join("&");
+			parameters = String.urlEncode( parameters );
+			return method + "&" + url + "&" + parameters;
+		}
+		function buildAuthorizationHeader(array oauth){
+			string headerPrefix;
+			array tempArray;
+			headerPrefix = 'Authorization: OAuth ';
+			oauth = oauth.ksort();
+			oauth.eachWithIndex() using ( value, index ){
+				string key;
+				key = oauth.getName(index); 
+				tempArray[] = key + '=' + String.urlEncode( ''+value );
+			};
+			headerPrefix += tempArray.join(', ');
+			return headerPrefix;
+		}
+		function getCompositeKey(string baseString, string consumerSecret, string oauthTokenSecret){
+			string compositeKey;
+			string oauth_signature;
+			string hash;
+			compositeKey = consumerSecret + '&' + oauthTokenSecret;
+			hash = MHash.hmacString( baseString, compositeKey, MHash.SHA1 );
+			oauth_signature = String.base64encode( hash );
+			return oauth_signature;
+		}		
+	}
+	class TwitterAuthentication extends TwitterMain{
+	
+		function sendRequest(array oauth, string baseURI, string header){
+			array oauthHeader;
+			array response;
+			array data;
+			string content;
+			object curl = new Curl.Curl();
+			oauthHeader = [ header, 'Expect:'];
+			curl.setOption(Curl.CURLOPT_HTTPHEADER, oauthHeader.join("\n"));
+			curl.setOption(Curl.CURLOPT_URL, baseURI);
+			curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
+			curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
+			curl.setOption(Curl.CURLOPT_HEADER, 0);
+			curl.setOption(Curl.CURLOPT_VERBOSE, 0);
+			curl.setOption(Curl.CURLOPT_POST, 1);
+			curl.setOption(Curl.CURLOPT_SSL_VERIFYPEER, 0);
+			curl.setOption(Curl.CURLOPT_POSTFIELDS, '');			
+			if( curl.exec() ) {
+					content = curl.getContent();
+				} else {
+					raise new Error("Error when connecting to: ${baseURI}");
+				}
+			return content;
+		}
+	}
+	class TwitterFetchTimeline extends TwitterMain{
+	
+		function sendRequest(array oauth, string baseURI, string header){
+			array oauthHeader;
+			array data;
+			string content;
+			object curl = new Curl.Curl();			
+			oauthHeader = [ header, 'Expect:'];
+			curl.setOption(Curl.CURLOPT_HTTPHEADER, oauthHeader.join("\n"));
+			curl.setOption(Curl.CURLOPT_URL, baseURI);
+			curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
+			curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
+			curl.setOption(Curl.CURLOPT_HEADER, 1);
+			curl.setOption(Curl.CURLOPT_VERBOSE, 1);
+			curl.setOption(Curl.CURLOPT_POST, 1);
+			curl.setOption(Curl.CURLOPT_SSL_VERIFYPEER, 0);
+			//curl.setOption(Curl.CURLOPT_POSTFIELDS, 1);				
+			if( curl.exec() ) {
+					content = curl.getContent();
+					monitor {
+						//Console.println('Content: ' + content);
+						data = JSON.parse( content );
+						
+					} handle {
+						raise new Error("Error when parsing response: ${content}");
+					}
+			} else {
+				raise new Error("Error when connecting to: ${baseURI}");
+			}
+			
+			return data;
+		}
+	}
+	
+	class twitterSendPostline{
+		constructor(){
+		}
+	}
+	
+}
