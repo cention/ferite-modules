@@ -1,0 +1,160 @@
+uses 'console';
+uses 'SOAP';
+
+class AddRequestResult {
+	number EWT;
+	number OpenMediaID;
+	number QueuePosition;
+	number RequestStatus;
+	
+	[rpc_import 'EWT:number', 'OpenMediaID:number', 'QueuePosition:number', 'RequestStatus:string'];
+}
+
+class GetOpenMediaRequestStatusByIDResult {
+	string RequestStatus;
+	string TimeStamp;
+	array OpenMediaRequests;
+	
+	[rpc_import 'RequestStatus:number', 'TimeStamp:string', 'OpenMediaRequests:array<OpenMediaRequest>'];
+}
+
+class OpenMediaRequest {
+	number ID;
+	number AgentID;
+	number LogonID;
+	string Status;
+	number TenantID;
+	number TimeStamp;
+	
+	[rpc_import 'AgentID:number', 'ID:number' , 'LogonID:number' , 'Status:string' , 'TenantID:number' , 'TimeStamp:string'];
+}
+
+class IVRInformation {
+	string Label;
+	string Data;
+	
+	constructor( string label, string data ) {
+		.Label = label;
+		.Data = data;
+	}
+	
+	[rpc_export Label, Data];
+}
+
+namespace Solidus {
+	string serverAddress;
+	string soapActionURL;
+	
+	function setDefaults( string serverAddress, string soapActionURL ) {
+		.serverAddress = serverAddress;
+		.soapActionURL = soapActionURL;
+	}
+	
+	function sendRequest( string url, string action, string f, array parameters, string result, string resultName ) {
+		array body = [ "${f}Response" => [ "${resultName}" => result ] ];
+		string message;
+		
+		message += "<?xml version='1.0' ?>";
+		message += '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"';
+		message += ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"';
+		message += ' xmlns:xsd="http://www.w3.org/2001/XMLSchema">';
+		message += '<soap:Body>';
+		message += "<${f} xmlns=\"${.soapActionURL}/\">";
+		message += '<request>';
+		
+		parameters.eachWithIndex() using ( value, index ) {
+			string name = parameters.getName(index);
+			message += SOAP.toSOAP( name, value, 'http://schemas.datacontract.org/2004/07/Solidus.OpenMedia.Contracts.DataContracts' );
+		};
+		
+		message += '</request>';
+		message += "</${f}>";
+		message += '</soap:Body>';
+		message += '</soap:Envelope>';
+		
+		return SOAP.RPC.sendRequest( url, action, message, body );
+	}
+	function addRequest( number serviceGroupID, string privateData ) {
+		return .addRequest(serviceGroupID, 0, false, privateData);
+	}
+	function addRequest( number serviceGroupID, number preferredAgentID, boolean forceToPreferredAgent, string privateData ) {
+		object result;
+
+		monitor {
+			array parameters;
+
+			parameters['ForceToPreferredAgent'] = false;
+			parameters['IVRInfo'] = [ new IVRInformation('label1', 'data1'), new IVRInformation(), new IVRInformation() ];
+			parameters['PreferredAgentID'] = preferredAgentID;
+			parameters['PrivateData'] = privateData;
+			parameters['ServiceGroupID'] = serviceGroupID;
+			parameters['ServiceGroupName'] = '';
+			parameters['TenantID'] = -1;
+
+			result = .sendRequest(
+					.serverAddress + '/OpenMediaService',
+					.soapActionURL + '/IOpenMediaService/AddRequest',
+					'AddRequest',
+					parameters,
+					'AddRequestResult',
+					'AddRequestResult'
+				);
+		} handle {
+			result = null;
+		}
+		
+		return result;
+	}
+
+	function cancelRequest( number openMediaID ) {
+		return .cancelRequest(openMediaID, true);
+	}
+	function cancelRequest( number openMediaID, boolean cancelIfAllocated ) {
+		boolean result;
+		
+		monitor {
+			array parameters;
+			
+			parameters['CancelIfAllocated'] = cancelIfAllocated;
+			parameters['DoNotReport'] = false;
+			parameters['OpenMediaID'] = openMediaID;
+			
+			result = .sendRequest(
+				.serverAddress + '/OpenMediaService',
+				.soapActionURL + '/IOpenMediaService/CancelRequest',
+				'CancelRequest',
+				parameters,
+				'boolean',
+				'CancelRequestResult'
+			);
+		} handle {
+			result = false;
+		}
+		
+		return result;
+	}
+
+	function getOpenMediaRequestStatus( number openMediaID ) {
+		object result;
+
+		monitor {
+			array parameters;
+		
+			parameters['openMediaID'] = openMediaID;
+			
+			result = .sendRequest(
+				.serverAddress + '/OpenMediaService',
+				.soapActionURL + '/IOpenMediaService/GetOpenMediaRequestStatusByID',
+				'GetOpenMediaRequestStatusByID',
+				parameters,
+				'GetOpenMediaRequestStatusByIDResult',
+				'GetOpenMediaRequestStatusByIDResult'
+			);
+		} handle {
+			result = null;
+		}
+	
+		return result;
+	}
+}
+

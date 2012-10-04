@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<yard name="Solidus">
+
+	<property id="name" value="cention-Solidus" />
+	<property id="version" value="3.2" />
+	
+	<collection id="Solidus">
+		<property type="prefix" value="$(FeriteModuleSourceDir)" />  
+
+		<list type="source">
+			<file name="Solidus.feh" />
+		</list>
+	</collection>
+
+	<phase id="install">
+		<perform action="install" target="Solidus" />
+	</phase>
+</yard>
