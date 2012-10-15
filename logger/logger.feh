@@ -10,57 +10,62 @@ namespace Logger {
 	 * @variable APPLICATION_AUTH
 	 * @type string
 	 */
-	string APPLICATION_AUTH = 'auth';
+	string APPLICATION_AUTH = 'cention-auth';
 	/**
 	 * @variable APPLICATION_ADMIN
 	  *@type string
 	 */
-	string APPLICATION_ADMIN = 'administration';
+	string APPLICATION_ADMIN = 'cention-administration';
 	/**
 	 * @variable APPLICATION_WORKFLOW
 	 * @type string
 	 */
-	string APPLICATION_WORKFLOW = 'workflow';
+	string APPLICATION_WORKFLOW = 'cention-workflow';
 	/**
 	 * @variable APPLICATION_REPORTS
 	 * @type string
 	 */
-	string APPLICATION_REPORTS = 'reports';
+	string APPLICATION_REPORTS = 'cention-reports';
 	/**
 	 * @variable APPLICATION_EXPORTS
 	 * @type string
 	 */
-	string APPLICATION_EXPORTS = 'exports';
+	string APPLICATION_EXPORTS = 'cention-exports';
 	/**
 	 * @variable APPLICATION_LIBRARY
 	 * @type string
 	 */
-	string APPLICATION_LIBRARY = 'library';
+	string APPLICATION_LIBRARY = 'cention-library';
 	/**
 	 * @variable APPLICATION_OUTBOUND
 	 * @type string
 	 */
-	string APPLICATION_OUTBOUND = 'outbound';
+	string APPLICATION_OUTBOUND = 'cention-outbound';
 	/**
 	 * @variable APPLICATION_CHAT
 	 * @type string
 	 */
-	string APPLICATION_CHAT = 'chat';
+	string APPLICATION_CHAT = 'cention-chat';
 	/**
 	 * @variable APPLICATION_FETCH
 	 * @type string
 	 */
-	string APPLICATION_FETCH = 'fetch';
+	string APPLICATION_FETCH = 'cention-fetch';
 	/**
 	 * @variable APPLICATION_SEND
 	 * @type string
 	 */
-	string APPLICATION_SEND = 'send';
+	string APPLICATION_SEND = 'cention-send';
 	/**
 	 * @variable APPLICATION_UPDATE
 	 * @type string
 	 */
-	string APPLICATION_UPDATE = 'update';
+	string APPLICATION_UPDATE = 'cention-update';
+	/**
+	 * @variable APPLICATION_SOLIDUS
+	 * @type string
+	 */
+	string APPLICATION_SOLIDUS = 'cention-update';
 	
 	array loggers;
 	function getLogger( string app ) {

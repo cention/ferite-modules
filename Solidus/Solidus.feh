@@ -11,20 +11,19 @@ class AddRequestResult {
 }
 
 class GetOpenMediaRequestStatusByIDResult {
-	string RequestStatus;
 	string TimeStamp;
 	array OpenMediaRequests;
 	
-	[rpc_import 'RequestStatus:number', 'TimeStamp:string', 'OpenMediaRequests:array<OpenMediaRequest>'];
+	[rpc_import 'TimeStamp:string', 'OpenMediaRequests:array<OpenMediaRequest>'];
 }
 
 class OpenMediaRequest {
 	number ID;
 	number AgentID;
-	number LogonID;
+	string LogonID;
 	string Status;
 	number TenantID;
-	number TimeStamp;
+	string TimeStamp;
 	
 	[rpc_import 'AgentID:number', 'ID:number' , 'LogonID:number' , 'Status:string' , 'TenantID:number' , 'TimeStamp:string'];
 }
@@ -60,14 +59,18 @@ namespace Solidus {
 		message += ' xmlns:xsd="http://www.w3.org/2001/XMLSchema">';
 		message += '<soap:Body>';
 		message += "<${f} xmlns=\"${.soapActionURL}/\">";
-		message += '<request>';
+		
+		if( f != 'GetOpenMediaRequestStatusByID' )
+			message += '<request>';
 		
 		parameters.eachWithIndex() using ( value, index ) {
 			string name = parameters.getName(index);
-			message += SOAP.toSOAP( name, value, 'http://schemas.datacontract.org/2004/07/Solidus.OpenMedia.Contracts.DataContracts' );
+			message += SOAP.toSOAP( name, value, (f != 'GetOpenMediaRequestStatusByID' ? 'http://schemas.datacontract.org/2004/07/Solidus.OpenMedia.Contracts.DataContracts' : '') );
 		};
 		
-		message += '</request>';
+		if( f != 'GetOpenMediaRequestStatusByID' )
+			message += '</request>';
+		
 		message += "</${f}>";
 		message += '</soap:Body>';
 		message += '</soap:Envelope>';
