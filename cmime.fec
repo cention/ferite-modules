@@ -223,7 +223,7 @@ namespace modifies Mail {
 		];
 
 		array arrayElement = Regexp.split("[/\\.]" , filename);
-		string  extension = Array.last(arrayElement);
+		string  extension = String.toLower(Array.last(arrayElement));
 					  
 		if( Array.keyExists( mime_types, extension ) ){
 			return mime_types[extension];            
