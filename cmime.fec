@@ -1,0 +1,240 @@
+/**
+ * @namespace Mail
+ * @modifies  Mail
+ */
+namespace modifies Mail {
+	/**
+	 * @namespace Mime
+	 * @brief     The mime types
+	 */ 
+	namespace Mime {
+		/**
+		 * @variable TYPETEXT
+		 * @type     number
+		 * @brief    unformatted text
+		 * @static
+		 */
+		final number  TYPETEXT = 0;               /* unformatted text */
+		/**
+		 * @variable TYPEMULTIPART
+		 * @type     number
+		 * @brief    multipart message
+		 * @static
+		 */
+		final number  TYPEMULTIPART = 1;          /* multiple part */
+		/**
+		 * @variable TYPEMESSAGE
+		 * @type     number
+		 * @brief    Encapsulated message
+		 * @static
+		 */
+		final number  TYPEMESSAGE = 2;            /* encapsulated message */
+		/**
+		 * @variable TYPEAPPLICATION
+		 * @type     number
+		 * @brief    Application
+		 * @static
+		 */
+		final number  TYPEAPPLICATION = 3;        /* application */
+		/**
+		 * @variable TYPEAUDIO
+		 * @type     number
+		 * @brief    Audio
+		 * @static
+		 */
+		final number  TYPEAUDIO = 4;              /* audio */
+		/**
+		 * @variable TYPEIMAGE
+		 * @type     number
+		 * @brief    Image
+		 * @static
+		 */
+		final number  TYPEIMAGE = 5;              /* static image */
+		/**
+		 * @variable TYPEVIDEO
+		 * @type     number
+		 * @brief    Video
+		 * @static
+		 */
+		final number  TYPEVIDEO = 6;              /* video */
+		/**
+		 * @variable TYPEMODEL
+		 * @type     number
+		 * @brief    Model
+		 * @static
+		 */
+		final number  TYPEMODEL = 7;              /* model */
+		/**
+		 * @variable TYPEOTHER
+		 * @type     number
+		 * @brief    Another type
+		 * @static
+		 */
+		final number  TYPEOTHER = 8;              /* unknown */
+		/**
+		 * @variable TYPEMAX
+		 * @type     number
+		 * @brief    Max type code
+		 * @static
+		 */
+		final number  TYPEMAX = 15;               /* maximum type code */
+
+		/**
+		 * @function toString
+		 * @declaration function toString(number i )
+		 * @brief Convert a given numerical mimetype to a string
+		 * @param number i The mime type id
+		 * @return The mimetype or an empty string
+		 */
+		function toString(number i ) {
+			switch(i) {
+				case 0: return "text";
+				case 3: return "application";
+				case 4: return "audio";
+				case 5: return "image";
+				case 6: return "video";
+				case 7: return "model";
+				default: return "";
+			}
+		}
+	}
+	/**
+	 * @end
+	 */
+	/**
+	 * @namespace Encoding
+	 * @brief     Encoding types
+	 */
+	namespace Encoding{
+		/**
+		 * @variable ENC7BIT
+		 * @type     number
+		 * @brief    7 bit SMTP semantic data
+		 * @static
+		 */
+		final number  ENC7BIT = 0;                /* 7 bit SMTP semantic data */
+		/**
+		 * @variable ENC8BIT
+		 * @type     number
+		 * @brief    8 bit SMTP semantic data
+		 * @static
+		 */
+		final number  ENC8BIT = 1;                /* 8 bit SMTP semantic data */
+		/**
+		 * @variable ENCBINARY
+		 * @type     number
+		 * @brief    8 bit binary data
+		 * @static
+		 */
+		final number  ENCBINARY = 2;              /* 8 bit binary data */
+		/**
+		 * @variable ENCBASE64
+		 * @type     number
+		 * @brief    Base64 Encoding
+		 * @static
+		 */
+		final number  ENCBASE64 = 3;              /* base-64 encoded data */
+		/**
+		 * @variable ENCQUOTEDPRINTABLE
+		 * @type     number
+		 * @brief    Quoted Printable Encoding
+		 * @static
+		 */
+		final number  ENCQUOTEDPRINTABLE = 4;     /* human-readable 8-as-7 bit data */
+		/**
+		 * @variable ENCOTHER
+		 * @type     number
+		 * @brief    Other type of encoding
+		 * @static
+		 */
+		final number  ENCOTHER = 5;               /* unknown */
+		/**
+		 * @variable ENCMAX
+		 * @type     number
+		 * @brief    Maximum encoding code
+		 * @static
+		 */
+		final number  ENCMAX = 10;                /* maximum encoding code */
+	}
+	/**
+	 * @end
+	 */
+	
+	
+   /**
+     * @variable filename
+     * @type string
+     * @brief Include a fuction which return file major and minor mime type
+     * @description If we give a fileanme as input it teturns it mime type
+     * @developer ashish ghosh
+     */
+	
+	namespace MimeContentType {
+   
+	function mime_content_type(string filename) {
+
+		array mime_types = [
+			'txt' => 'text/plain',
+			'htm' => 'text/html',
+			'html' => 'text/html',
+			'php' => 'text/html',
+			'css' => 'text/css',
+			'js' => 'application/javascript',
+			'json' => 'application/json',
+			'xml' => 'application/xml',
+			'swf' => 'application/x-shockwave-flash',
+			'flv' => 'video/x-flv',
+			// images
+			'png' => 'image/png',
+			'jpe' => 'image/jpeg',
+			'jpeg' => 'image/jpeg',
+			'jpg' => 'image/jpeg',
+			'gif' => 'image/gif',
+			'bmp' => 'image/bmp',
+			'ico' => 'image/vnd.microsoft.icon',
+			'tiff' => 'image/tiff',
+			'tif' => 'image/tiff',
+			'svg' => 'image/svg+xml',
+			'svgz' => 'image/svg+xml',
+			// archives
+			'zip' => 'application/zip',
+			'rar' => 'application/x-rar-compressed',
+			'exe' => 'application/x-msdownload',
+			'msi' => 'application/x-msdownload',
+			'cab' => 'application/vnd.ms-cab-compressed',
+			// audio/video
+			'mp3' => 'audio/mpeg',
+			'qt' => 'video/quicktime',
+			'mov' => 'video/quicktime',
+			// adobe
+			'pdf' => 'application/pdf',
+			'psd' => 'image/vnd.adobe.photoshop',
+			'ai' => 'application/postscript',
+			'eps' => 'application/postscript',
+			'ps' => 'application/postscript',
+			// ms office
+			'doc' => 'application/msword',
+			'rtf' => 'application/rtf',
+			'xls' => 'application/vnd.ms-excel',
+			'ppt' => 'application/vnd.ms-powerpoint',
+			// open office
+			'odt' => 'application/vnd.oasis.opendocument.text',
+			'ods' => 'application/vnd.oasis.opendocument.spreadsheet'
+		];
+
+		array arrayElement = Regexp.split("[/\\.]" , filename);
+		string  extension = Array.last(arrayElement);
+					  
+		if( Array.keyExists( mime_types, extension ) ){
+			return mime_types[extension];            
+		}
+		else {
+			return 'application/octet-stream';
+		}
+	}
+
+	}
+}
+/**
+ * @end
+ */
