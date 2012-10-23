@@ -4,17 +4,15 @@
 	<property id="name" value="cention-twitter" />
 	<property id="version" value="3.2" />
 
-	<module id="twitter">
+	<collection id="twitter">
+		<property type="prefix" value="$(FeriteModuleSourceDir)" /> 
+
 		<list type="source">
-			<file name="twitter.feh" />
+			<file name="cention_twitter.feh" />
 		</list>
-		<property type="prefix" value="$(FeriteModuleNativeDir)" />        
-	</module>
+	</collection>
 
 	<phase id="install">
 		<perform action="install" target="twitter" />
-		<copy file="twitter.feh" target="$(FeriteModuleSourceDir)" />
 	</phase>
-
 </yard>
-
