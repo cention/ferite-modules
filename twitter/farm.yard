@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<yard name="twitter">
+
+	<property id="name" value="cention-twitter" />
+	<property id="version" value="3.2" />
+
+	<collection id="twitter">
+		<property type="prefix" value="$(FeriteModuleSourceDir)" /> 
+
+		<list type="source">
+			<file name="cention_twitter.feh" />
+		</list>
+	</collection>
+
+	<phase id="install">
+		<perform action="install" target="twitter" />
+	</phase>
+</yard>
