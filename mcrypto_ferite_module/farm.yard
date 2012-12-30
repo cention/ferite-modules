@@ -1,0 +1,28 @@
+<?xml version="1.0" ?>
+<yard name="mcrypt">
+
+	<property id="name" value="cention-mcrypt" />
+	<property id="version" value="3.2" />
+
+	<module id="mcrypt">
+		<list type="source">
+			<file name="mcrypt.fec" />
+		</list>
+		<property type="C">
+			<program-output program="ferite-config" arguments="--cflags" />
+		</property>
+		<property type="LD">
+			<program-output program="ferite-config" arguments="--libs" />
+		</property>
+		<add-property type="LD" value="-lmcrypt" />
+		<property type="prefix" value="$(FeriteModuleNativeDir)" />        
+	</module>
+
+	<phase id="install" depends="build">
+		<perform action="install" target="mcrypt" />
+		<copy file="mcrypt.fec" target="$(FeriteModuleSourceDir)" />
+		<copy file="$(ProductDir)/mcrypt.xml" target="$(FeriteModuleDescriptionDir)" />
+	</phase>
+
+</yard>
+

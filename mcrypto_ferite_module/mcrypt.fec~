@@ -1,0 +1,142 @@
+uses "mcrypt.lib";
+
+module-header {
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <mcrypt.h>
+
+}
+
+
+namespace mcrypt{
+
+class mcrypt{
+
+native function encode( string string1) : string {
+
+	int i;
+	char *IV;
+	int iv_size;
+	int keysize;
+	char *key;
+	int blocksize;
+	int cryptsize;
+	char *target;
+	char* result;
+
+
+	MCRYPT td = mcrypt_module_open( "des", NULL, "ecb", NULL );
+	if ( td == MCRYPT_FAILED ) {
+		FE_RETURN_FALSE ;
+	}
+
+	if ( mcrypt_enc_self_test( td ) != 0 ) {
+		FE_RETURN_FALSE ;
+	}
+
+	iv_size = mcrypt_enc_get_iv_size( td );
+
+	if ( iv_size != 0 ) {
+		IV = calloc( 1, iv_size );
+		for ( i = 0; i < iv_size; i++ ) {
+			IV[ i ] = rand();
+		}
+	}
+
+	keysize = mcrypt_enc_get_key_size( td );
+	key = calloc( 1, keysize );
+	memcpy(key, "12345678", keysize);
+
+	i = mcrypt_generic_init ( td, key, keysize, IV );
+
+	if (i < 0) {
+		// mcrypt_perror( i );
+		// exit(1);
+		FE_RETURN_FALSE;	  
+	}
+	  
+	  
+	blocksize = mcrypt_enc_get_block_size( td );
+	cryptsize = ( (  string1->length  + blocksize - 1 ) / blocksize ) * blocksize;
+	target = calloc( 1,  cryptsize );
+
+	memcpy( target, string1->data,  string1->length );
+
+	if ( mcrypt_generic( td, target, cryptsize ) != 0 ) {
+	fprintf( stderr, "Code failing" );
+	}
+
+	mcrypt_generic_deinit( td );
+	mcrypt_module_close( td );
+
+	FE_RETURN_CSTR( target, FE_TRUE );
+
+}
+
+
+
+native function decode( string string2 ) : string {
+
+	int i;
+	char *IV;
+	int iv_size;
+	int keysize;
+	char *key;
+	int blocksize;
+	char *target;
+	char *block_buffer;
+	int decryptlength;
+
+	MCRYPT td = mcrypt_module_open( "des", NULL, "ecb", NULL );
+
+	if ( td == MCRYPT_FAILED ) {
+	        FE_RETURN_FALSE ;
+	}
+
+	if ( mcrypt_enc_self_test( td ) != 0 ) {
+	        FE_RETURN_FALSE ;
+	}
+
+	iv_size = mcrypt_enc_get_iv_size( td );
+
+	if ( iv_size != 0 ) {
+		IV = calloc( 1, iv_size );
+		for ( i = 0; i < iv_size; i++ ) {
+			IV[ i ] = rand();
+		}
+	}
+
+	keysize = mcrypt_enc_get_key_size( td );
+	key = calloc( 1, keysize );
+	memcpy(key, "12345678", keysize);
+
+	i = mcrypt_generic_init ( td, key, keysize, IV );
+	if ( i < 0 ) {
+		// mcrypt_perror( i );
+		//exit(1);
+		FE_RETURN_FALSE ;
+	}
+
+
+	blocksize = mcrypt_enc_get_block_size( td );
+	block_buffer = calloc( 1, blocksize );
+	decryptlength = (string2->length + blocksize - 1) / blocksize * blocksize;
+	target = calloc( 1, decryptlength );
+
+	memcpy(target, string2->data , string2->length);
+	mdecrypt_generic( td, target, decryptlength );
+
+
+	mcrypt_generic_deinit( td );
+	mcrypt_module_close( td );
+
+	free(block_buffer);
+	FE_RETURN_CSTR( target, FE_TRUE ); 
+
+}
+
+}
+
+}
