@@ -6,7 +6,10 @@
 
 	<module id="mcrypt">
 		<list type="source">
-			<file name="mcrypt.fec" />
+			<file name="mcrypt_module.fec" />
+		</list>
+		<list type="source">
+			<file name="mcrypt.feh" />
 		</list>
 		<property type="C">
 			<program-output program="ferite-config" arguments="--cflags" />
@@ -20,7 +23,7 @@
 
 	<phase id="install" depends="build">
 		<perform action="install" target="mcrypt" />
-		<copy file="mcrypt.fec" target="$(FeriteModuleSourceDir)" />
+		<copy file="mcrypt_module.fec" target="$(FeriteModuleSourceDir)" />
 		<copy file="mcrypt.feh" target="$(FeriteModuleSourceDir)" />
 		<copy file="$(ProductDir)/mcrypt.xml" target="$(FeriteModuleDescriptionDir)" />
 	</phase>

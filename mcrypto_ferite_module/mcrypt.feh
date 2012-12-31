@@ -1,6 +1,6 @@
 // developed by ashish ghosh. email:ashish_ghosh@cention.se
 
-uses "mcrypt.fec";
+uses "mcrypt_module.fec";
 uses "string","number","console","array";
 uses "MHash.fec";
 
