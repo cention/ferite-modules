@@ -1,0 +1,31 @@
+## mcrypt install
+
+wget http://easynews.dl.sourceforge.net/sourceforge/mcrypt/libmcrypt-2.5.8.tar.gz
+
+tar -xvzf libmcrypt-2.5.8.tar.gz
+
+cd libmcrypt-2.5.8
+
+./configure --prefix=/cention --disable-posix-threads
+
+make
+
+sudo make install
+
+
+
+##Installing libltdl (optional)
+
+cd libltdl
+
+./configure --prefix=/cention --enable-ltdl-install
+
+make
+
+make install # As root
+
+
+##farm install
+
+
+LD_LIBRARY_PATH=/cention/lib PATH=/cention/bin:$PATH farm clean then PATH=/cention/bin:$PATH farm install
