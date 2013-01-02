@@ -1,12 +1,13 @@
- uses "mcrypt.feh";
+ uses "mcrypt.feh","string","console";
  
- 
-   string  password = "ashish ghosh";
+   string passphrase = "";
+   string  password;
    string  encryptedPassword;
    string  decryptedPassword;
-   encryptedPassword = mCrypt.encryptMcryptography(password);
+   password = String.escape(argv[0]);
+   encryptedPassword = mCrypt.encryptMcryptography(password , passphrase);
    Console.println("encrypt:" + "${encryptedPassword}");
-   decryptedPassword = mCrypt.decryptMcryptography(encryptedPassword);
+   decryptedPassword = mCrypt.decryptMcryptography(encryptedPassword , passphrase);
    Console.println("decrypt:" + "${decryptedPassword}");
   
    

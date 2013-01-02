@@ -1,46 +1,40 @@
 // developed by ashish ghosh. email:ashish_ghosh@cention.se
 
-uses "mcrypt_module.fec";
-uses "string","number","console","array";
-uses "MHash.fec";
+uses "mcrypt_module";
 
 namespace mCrypt{
     
     
-      function encryptMcryptography(string password) {
-	
-	object mcryptObj = new mcrypt.mcrypt();
-	string mcryptPassword;
-	string encodedPassword;
-	
-        monitor {
-		mcryptPassword = mcryptObj.encode(password);
-		encodedPassword = String.base64encode(mcryptPassword);
-		return encodedPassword; 
-	}handle{
-		return "!!! Error to connect in mcrypt";
-	}
-	                               
-      } 
-    
-    
-      function decryptMcryptography(string password) {
-	
-	object mcryptObj = new mcrypt.mcrypt();
-	string decodedPassword;
-	string mcryptPassword;
-      	
-        monitor {
-		decodedPassword = String.base64decode(password);
-		mcryptPassword = mcryptObj.decode(decodedPassword);
-		return mcryptPassword; 
-	}handle{
-		return "!!! Error to connect in mcrypt";
-	}	
-	                               
-      } 
-    
+	function encryptMcryptography(string password , string passphrase ) {
+	  
+		object mcryptObj = new mcrypt.mcrypt("des", "ecb");
+		string mcryptPassword;
+		string encodedPassword;
+		  
+		monitor {
+			mcryptObj.keygenarate(passphrase);
+			mcryptPassword = mcryptObj.encode(password);
+			return mcryptPassword; 
+		}handle{
+			return "!!! Error to connect in mcrypt";
+		}
+					  
+	} 
+	      
+	function decryptMcryptography(string password , string passphrase ) {
+	  
+		object mcryptObj = new mcrypt.mcrypt("des", "ecb");
+		string decodedPassword;
+		string mcryptPassword;
 
-    
-  
+		monitor {
+			mcryptObj.keygenarate(passphrase);
+			mcryptPassword = mcryptObj.decode(password);
+			return mcryptPassword; 
+		}handle{
+			return "!!! Error to connect in mcrypt";
+		}	
+					  
+	} 
+
 }

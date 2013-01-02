@@ -3,142 +3,138 @@
 uses "mcrypt.lib";
 
 module-header {
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <mcrypt.h>
-
+#include <mhash.h>
+#define selfCrypt ((MCRYPT)(self->odata))
 }
 
 
 namespace mcrypt{
 
-class mcrypt{
+  class mcrypt{
+    
+	/**
+	* @function mcrypt constructor.
+	* @param string algo - The algorithm to use.
+	* @param string mode - The encryption mode.
+	*/ 
 
-native function encode( string password) : string {
-
-	int i;
-	char *IV;
-	int iv_size;
-	int keysize;
-	char *key;
-	int blocksize;
-	int cryptsize;
-	char *target;
-	char* result;
-
-
-	MCRYPT td = mcrypt_module_open( "des", NULL, "ecb", NULL );
-	if ( td == MCRYPT_FAILED ) {
-		FE_RETURN_FALSE ;
-	}
-
-	if ( mcrypt_enc_self_test( td ) != 0 ) {
-		FE_RETURN_FALSE ;
-	}
-
-	iv_size = mcrypt_enc_get_iv_size( td );
-
-	if ( iv_size != 0 ) {
-		IV = calloc( 1, iv_size );
-		for ( i = 0; i < iv_size; i++ ) {
-			IV[ i ] = rand();
+	native function constructor(string algo, string mode) {
+		self->odata = mcrypt_module_open(algo->data, NULL,mode->data, NULL);
+		if( selfCrypt == MCRYPT_FAILED ) {
+			ferite_error(script, 0, "Error, couldn't initialize crypt module\n");
+			FE_RETURN_NULL_OBJECT;
 		}
 	}
 
-	keysize = mcrypt_enc_get_key_size( td );
-	key = calloc( 1, keysize );
-	memcpy(key, "12345678", keysize);
+	/**
+	* @function mcrypt Key genarate function.
+	* @param string passphrase - Use for key generation.
+	*/ 
 
-	i = mcrypt_generic_init ( td, key, keysize, IV );
-
-	if (i < 0) {
-		// mcrypt_perror( i );
-		// exit(1);
-		FE_RETURN_FALSE;	  
-	}
+	native function keygenarate( string passphrase ){
 	  
-	  
-	blocksize = mcrypt_enc_get_block_size( td );
-	cryptsize = ( (  password->length  + blocksize - 1 ) / blocksize ) * blocksize;
-	target = calloc( 1,  cryptsize );
-
-	memcpy( target, password->data,  password->length );
-
-	if ( mcrypt_generic( td, target, cryptsize ) != 0 ) {
-	fprintf( stderr, "Code failing" );
-	}
-
-	mcrypt_generic_deinit( td );
-	mcrypt_module_close( td );
-
-	FE_RETURN_CSTR( target, FE_TRUE );
-
-}
-
-
-
-native function decode( string password ) : string {
-
-	int i;
-	char *IV;
-	int iv_size;
-	int keysize;
-	char *key;
-	int blocksize;
-	char *target;
-	char *block_buffer;
-	int decryptlength;
-
-	MCRYPT td = mcrypt_module_open( "des", NULL, "ecb", NULL );
-
-	if ( td == MCRYPT_FAILED ) {
-	        FE_RETURN_FALSE ;
-	}
-
-	if ( mcrypt_enc_self_test( td ) != 0 ) {
-	        FE_RETURN_FALSE ;
-	}
-
-	iv_size = mcrypt_enc_get_iv_size( td );
-
-	if ( iv_size != 0 ) {
-		IV = calloc( 1, iv_size );
-		for ( i = 0; i < iv_size; i++ ) {
-			IV[ i ] = rand();
+		int i;
+		char *key;
+		int iv_size, err, flag;
+		int key_len = 0;
+		char *iv;
+		KEYGEN keygen;
+			  
+		key_len /= 8;
+		if( key_len <= 0)
+		key_len = mcrypt_enc_get_key_size( selfCrypt );		    
+		key=calloc(1,key_len*sizeof(char));
+		keygen.count = 0;
+		keygen.salt= NULL;
+		keygen.hash_algorithm[0] = MHASH_MD5;
+		keygen.salt_size = mhash_get_keygen_salt_size(MHASH_MD5);
+		  
+		if( key == NULL ){
+			FE_RETURN_FALSE;
 		}
+		mhash_keygen_ext( KEYGEN_MCRYPT ,keygen, key, key_len, passphrase->data , strlen(passphrase->data));
+		      
+				
+		if(flag = mcrypt_enc_mode_has_iv( selfCrypt )){
+
+			iv_size = mcrypt_enc_get_iv_size( selfCrypt );			
+			iv = malloc(iv_size*sizeof(char));
+			
+			if( iv == NULL ){    
+				FE_RETURN_FALSE;	    
+			}else {		    
+			for(i=0;i<iv_size;i++)
+				iv[i]=rand();	      
+			}
+		}
+			
+	      
+		err = mcrypt_generic_init( selfCrypt, key, key_len, iv);       
+		if( err < 0 ) {
+			mcrypt_perror(err);
+			ferite_error(script, 0,"");
+			FE_RETURN_FALSE;
+		}       
+	  
 	}
 
-	keysize = mcrypt_enc_get_key_size( td );
-	key = calloc( 1, keysize );
-	memcpy(key, "12345678", keysize);
+	/**
+	* @function mcrypt password encode function.
+	* @param string password - Use for psaaword encryption.
+	*/ 
 
-	i = mcrypt_generic_init ( td, key, keysize, IV );
-	if ( i < 0 ) {
-		// mcrypt_perror( i );
-		//exit(1);
-		FE_RETURN_FALSE ;
+	native function encode( string password ) {
+
+		int err;
+		FeriteVariable *ret_str;
+		ret_str = fe_new_str( "crypt_str", password->data,password->length,FE_CHARSET_DEFAULT );
+		err = mcrypt_generic (selfCrypt, VAS(ret_str)->data, VAS( ret_str)->length );
+		if( err ) {
+			ferite_variable_destroy( script , ret_str );
+			mcrypt_perror( err );
+			ferite_error( script, 0, "error\n" );
+			FE_RETURN_FALSE;
+		}
+		FE_RETURN_VAR( ret_str );
+
+
+	}
+
+	/**
+	* @function mcrypt password deencode function.
+	* @param string password - Use for psaaword decryption.
+	*/ 
+
+	native function decode( string password ) {
+
+	FeriteVariable *ret_str;
+				
+	ret_str = fe_new_str("new_str",password->data,password->length ,FE_CHARSET_DEFAULT);
+	mdecrypt_generic (selfCrypt, VAS(ret_str)->data , VAS(ret_str)->length );
+	FE_RETURN_VAR(ret_str);
+		
+	}
+
+	/**
+	* @function mcrypt constructor.
+	*/ 
+
+	native function destructor()
+	{
+		if( selfCrypt == NULL ) {
+			ferite_error( script, 0, "Internal error\n");
+			FE_RETURN_FALSE;
+		}
+		mcrypt_generic_deinit(selfCrypt);
+		mcrypt_module_close(selfCrypt);
 	}
 
 
-	blocksize = mcrypt_enc_get_block_size( td );
-	block_buffer = calloc( 1, blocksize );
-	decryptlength = (password->length + blocksize - 1) / blocksize * blocksize;
-	target = calloc( 1, decryptlength );
 
-	memcpy(target, password->data , password->length);
-	mdecrypt_generic( td, target, decryptlength );
-
-
-	mcrypt_generic_deinit( td );
-	mcrypt_module_close( td );
-
-	free(block_buffer);
-	FE_RETURN_CSTR( target, FE_TRUE ); 
-
-}
-
-}
+  }
 
 }

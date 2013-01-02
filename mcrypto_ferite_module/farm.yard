@@ -10,6 +10,8 @@
 		</list>
 		<list type="source">
 			<file name="mcrypt.feh" />
+			
+		
 		</list>
 		<property type="C">
 			<program-output program="ferite-config" arguments="--cflags" />
@@ -18,6 +20,7 @@
 			<program-output program="ferite-config" arguments="--libs" />
 		</property>
 		<add-property type="LD" value="-lmcrypt" />
+		<add-property type="LD" value="-lmhash" />
 		<property type="prefix" value="$(FeriteModuleNativeDir)" />        
 	</module>
 
