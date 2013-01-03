@@ -79,7 +79,7 @@ namespace mcrypt{
 			ferite_error(script, 0,"");
 			FE_RETURN_FALSE;
 		}       
-	  
+	 FE_RETURN_TRUE;
 	}
 
 	/**
