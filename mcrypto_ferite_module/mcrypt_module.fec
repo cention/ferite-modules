@@ -8,7 +8,7 @@ module-header {
 #include <string.h>
 #include <mcrypt.h>
 #include <mhash.h>
-#define selfCrypt ((MCRYPT)(self->odata))
+#define td ((MCRYPT)(self->odata))
 }
 
 
@@ -24,7 +24,7 @@ namespace mcrypt{
 
 	native function constructor(string algo, string mode) {
 		self->odata = mcrypt_module_open(algo->data, NULL,mode->data, NULL);
-		if( selfCrypt == MCRYPT_FAILED ) {
+		if( td == MCRYPT_FAILED ) {
 			ferite_error(script, 0, "Error, couldn't initialize crypt module\n");
 			FE_RETURN_NULL_OBJECT;
 		}
@@ -46,7 +46,7 @@ namespace mcrypt{
 			  
 		key_len /= 8;
 		if( key_len <= 0)
-		key_len = mcrypt_enc_get_key_size( selfCrypt );		    
+		key_len = mcrypt_enc_get_key_size( td );		    
 		key=calloc(1,key_len*sizeof(char));
 		keygen.count = 0;
 		keygen.salt= NULL;
@@ -59,9 +59,9 @@ namespace mcrypt{
 		mhash_keygen_ext( KEYGEN_MCRYPT ,keygen, key, key_len, passphrase->data , strlen(passphrase->data));
 		      
 				
-		if(flag = mcrypt_enc_mode_has_iv( selfCrypt )){
+		if(flag = mcrypt_enc_mode_has_iv( td )){
 
-			iv_size = mcrypt_enc_get_iv_size( selfCrypt );			
+			iv_size = mcrypt_enc_get_iv_size( td );			
 			iv = malloc(iv_size*sizeof(char));
 			
 			if( iv == NULL ){    
@@ -73,7 +73,7 @@ namespace mcrypt{
 		}
 			
 	      
-		err = mcrypt_generic_init( selfCrypt, key, key_len, iv);       
+		err = mcrypt_generic_init( td, key, key_len, iv);       
 		if( err < 0 ) {
 			mcrypt_perror(err);
 			ferite_error(script, 0,"");
@@ -92,7 +92,7 @@ namespace mcrypt{
 		int err;
 		FeriteVariable *ret_str;
 		ret_str = fe_new_str( "crypt_str", password->data,password->length,FE_CHARSET_DEFAULT );
-		err = mcrypt_generic (selfCrypt, VAS(ret_str)->data, VAS( ret_str)->length );
+		err = mcrypt_generic (td, VAS(ret_str)->data, VAS( ret_str)->length );
 		if( err ) {
 			ferite_variable_destroy( script , ret_str );
 			mcrypt_perror( err );
@@ -114,7 +114,7 @@ namespace mcrypt{
 	FeriteVariable *ret_str;
 				
 	ret_str = fe_new_str("new_str",password->data,password->length ,FE_CHARSET_DEFAULT);
-	mdecrypt_generic (selfCrypt, VAS(ret_str)->data , VAS(ret_str)->length );
+	mdecrypt_generic (td, VAS(ret_str)->data , VAS(ret_str)->length );
 	FE_RETURN_VAR(ret_str);
 		
 	}
@@ -125,12 +125,12 @@ namespace mcrypt{
 
 	native function destructor()
 	{
-		if( selfCrypt == NULL ) {
+		if( td == NULL ) {
 			ferite_error( script, 0, "Internal error\n");
 			FE_RETURN_FALSE;
 		}
-		mcrypt_generic_deinit(selfCrypt);
-		mcrypt_module_close(selfCrypt);
+		mcrypt_generic_deinit(td);
+		mcrypt_module_close(td);
 	}
 
 
