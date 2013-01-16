@@ -1,10 +1,10 @@
  uses "mcrypt.feh","string","console";
  
-   string passphrase = "";
-   string  password;
+   string passphrase = "cention";
+   string  password = "ashish";
    string  encryptedPassword;
    string  decryptedPassword;
-   password = String.escape(argv[0]);
+  
    encryptedPassword = mCrypt.encryptMcryptography(password , passphrase);
    Console.println("encrypt:" + "${encryptedPassword}");
    decryptedPassword = mCrypt.decryptMcryptography(encryptedPassword , passphrase);

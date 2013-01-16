@@ -9,23 +9,14 @@ namespace mCrypt{
 	  
 		object mcryptObj = new mcrypt.mcrypt("des", "ecb");
 		string encryptedPassword;
-		number length;
-		length = String.length( password );
-		 
-		if( length >= 8 ){
-		
-			monitor {		       		        
-				 mcryptObj.keygenarate(passphrase);			
-				 encryptedPassword = mcryptObj.encode(password);
-				 return encryptedPassword; 
-				}
-			handle {
-				raise new Error("Encryption error to connect in mcrypt .");
+		monitor {		       		        
+				mcryptObj.keygenarate(passphrase);			
+				encryptedPassword = mcryptObj.encode(password);
+				return encryptedPassword; 
 			}
-		}
-		else {
-			raise new Error("Error string length must be greater than 7 .");
-		}			  
+		handle {
+			raise new Error("Encryption error to connect in mcrypt .");
+		}		  
 	} 
 	      
 	function decryptMcryptography(string password , string passphrase ) {

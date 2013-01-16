@@ -40,45 +40,46 @@ namespace mcrypt{
 		int i;
 		char *key;
 		int iv_size, err, flag;
-		int key_len = 0;
+		int key_len;
 		char *iv;
 		KEYGEN keygen;
-			  
+		
+		key_len = strlen(passphrase->data);		
 		key_len /= 8;
 		if( key_len <= 0)
-		key_len = mcrypt_enc_get_key_size( td );		    
-		key=calloc(1,key_len*sizeof(char));
+		key_len = mcrypt_enc_get_key_size( td );
+		key = calloc(1,key_len*sizeof(char));
+		
 		keygen.count = 0;
 		keygen.salt= NULL;
 		keygen.hash_algorithm[0] = MHASH_MD5;
 		keygen.salt_size = mhash_get_keygen_salt_size(MHASH_MD5);
 		  
 		if( key == NULL ){
+			ferite_error(script, 0,"error\n");
 			FE_RETURN_FALSE;
 		}
 		mhash_keygen_ext( KEYGEN_MCRYPT ,keygen, key, key_len, passphrase->data , strlen(passphrase->data));
-		      
-				
-		if(flag = mcrypt_enc_mode_has_iv( td )){
-
+		    		
+		if(mcrypt_enc_mode_has_iv( td )){
+                        
 			iv_size = mcrypt_enc_get_iv_size( td );			
 			iv = malloc(iv_size*sizeof(char));
-			
+		
 			if( iv == NULL ){    
-				FE_RETURN_FALSE;	    
+				ferite_error(script, 0,"error\n");
+				FE_RETURN_FALSE;
 			}else {		    
 			for(i=0;i<iv_size;i++)
 				iv[i]=rand();	      
-			}
-		}
-			
-	      
-		err = mcrypt_generic_init( td, key, key_len, iv);       
+			}			
+		}	        
+		err = mcrypt_generic_init( td, key, key_len, iv);   
 		if( err < 0 ) {
 			mcrypt_perror(err);
-			ferite_error(script, 0,"");
+			ferite_error(script, 0,"error\n");
 			FE_RETURN_FALSE;
-		}       
+		}   
 	 FE_RETURN_TRUE;
 	}
 
@@ -90,18 +91,26 @@ namespace mcrypt{
 	native function encode( string password ) {
 
 		int err;
+		int blocksize , cryptsize;
 		FeriteVariable *ret_str;
-		ret_str = fe_new_str( "crypt_str", password->data,password->length,FE_CHARSET_DEFAULT );
-		err = mcrypt_generic (td, VAS(ret_str)->data, VAS( ret_str)->length );
+		char *target;
+		
+		ret_str = fe_new_str( "encrypt_str", password->data,password->length,FE_CHARSET_DEFAULT );
+			
+		blocksize = mcrypt_enc_get_block_size( td );
+		cryptsize = ( ( VAS( ret_str)->length  + blocksize - 1 ) / blocksize ) * blocksize;		
+		target = calloc( 1,  cryptsize );
+
+               memcpy( target, VAS(ret_str)->data, VAS(ret_str)->length );		
+		err = mcrypt_generic(td, target, cryptsize);
 		if( err ) {
 			ferite_variable_destroy( script , ret_str );
 			mcrypt_perror( err );
 			ferite_error( script, 0, "error\n" );
 			FE_RETURN_FALSE;
 		}
-		FE_RETURN_VAR( ret_str );
-
-
+		
+		FE_RETURN_CSTR(target , free);
 	}
 
 	/**
@@ -110,12 +119,24 @@ namespace mcrypt{
 	*/ 
 
 	native function decode( string password ) {
-
-	FeriteVariable *ret_str;
-				
-	ret_str = fe_new_str("new_str",password->data,password->length ,FE_CHARSET_DEFAULT);
-	mdecrypt_generic (td, VAS(ret_str)->data , VAS(ret_str)->length );
-	FE_RETURN_VAR(ret_str);
+	  
+		int blocksize , cryptsize;
+		char *block_buffer;
+		char *target;
+		FeriteVariable *ret_str;
+		
+		ret_str = fe_new_str("decrypt_str",password->data,password->length ,FE_CHARSET_DEFAULT);
+		
+		blocksize = mcrypt_enc_get_block_size( td );
+		block_buffer = calloc( 1, blocksize );
+		cryptsize = ( ( VAS( ret_str)->length  + blocksize - 1 ) / blocksize ) * blocksize;
+		target = calloc( 1, cryptsize );
+		
+		memcpy(target, VAS(ret_str)->data, VAS( ret_str)->length);		
+		mdecrypt_generic (td, target , cryptsize );
+		
+		free(block_buffer);
+		FE_RETURN_CSTR(target , free);
 		
 	}
 
