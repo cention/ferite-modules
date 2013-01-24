@@ -1,0 +1,33 @@
+<?xml version="1.0" ?>
+<yard name="encrypt">
+
+	<property id="name" value="cention-encrypt" />
+	<property id="version" value="3.2" />
+
+	<module id="encrypt">
+		<property type="C">
+			<program-output program="ferite-config" arguments="--cflags" />
+			<program-output program="libmcrypt-config" arguments="--cflags" />
+		</property>
+
+		<property type="LD">
+			<program-output program="ferite-config" arguments="--libs" />
+			<program-output program="libmcrypt-config" arguments="--libs" />
+		</property>
+
+		<property type="prefix" value="$(FeriteModuleNativeDir)" />        
+
+		<list type="source">
+			<file name="encrypt.fec" />
+			<file name="utility.c" />
+			<file name="utility.h" />
+		</list>
+	</module>
+
+	<phase id="install" depends="build">
+		<perform action="install" target="encrypt" />
+		<copy file="encrypt.fec" target="$(FeriteModuleSourceDir)" />
+	</phase>
+
+</yard>
+

@@ -1,0 +1,26 @@
+uses 'encrypt.lib';
+
+module-header {
+	#include "utility.h"
+	#include <mcrypt.h>
+}
+
+namespace modifies String {
+	native function blowfishEncrypt( string plainText, string key ) {
+		MCRYPT td = Ferite_Encrypt_Open_MCrypt(key->data, key->data);
+		char *encrypted = strdup(plainText->data);
+		mcrypt_generic(td, encrypted, strlen(encrypted));
+		Ferite_Encrypt_Close_MCrypt(td);
+		FeriteVariable *variable = ferite_create_string_variable_from_ptr(script, "encrypted", encrypted, strlen(encrypted), FE_CHARSET_DEFAULT, FE_STATIC);
+		FE_RETURN_VAR(variable);
+	}
+	
+	native function blowfishDecrypt( string encryptedText, string key ) {
+		MCRYPT td = Ferite_Encrypt_Open_MCrypt(key->data, key->data);
+		char *decrypted = strdup(encryptedText->data);
+		mdecrypt_generic(td, decrypted, strlen(decrypted));
+		Ferite_Encrypt_Close_MCrypt(td);
+		FeriteVariable *variable = ferite_create_string_variable_from_ptr(script, "decrypted", decrypted, strlen(decrypted), FE_CHARSET_DEFAULT, FE_STATIC);
+		FE_RETURN_VAR(variable);
+	}
+}
