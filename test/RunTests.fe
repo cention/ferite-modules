@@ -1,0 +1,20 @@
+uses 'console';
+uses 'posix';
+uses 'filesystem';
+uses 'CentionTest';
+
+string path = Directory.getCurrent() + '/tests';
+object directory = Directory.open(path);
+
+if( directory ) {
+	Directory.walk(path) using ( file ) {
+		//monitor {
+			include(file);
+		//} handle {
+		//	raise new Error("Could not open test file '${file}'");
+		//}
+	};
+}
+
+CentionTestManager.runAllTests();
+

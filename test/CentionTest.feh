@@ -1,0 +1,222 @@
+uses 'console';
+uses 'reflection';
+uses 'posix';
+uses 'network';
+uses 'math';
+uses 'sys';
+uses 'JSON';
+
+class MockObjRunSrv {
+	static boolean running = true;
+	static object server;
+	static array queryReturnValues;
+	
+	static function registerQueryReturnValue( string name, void value ) {
+		.queryReturnValues[name] = value;
+	}
+	
+	static function response( string content ) {
+		array output;
+		output[] = "HTTP/1.0 200 Ok";
+		output[] = "Content-Type: text/json; charset=UTF-8";
+		output[] = "Content-Length: ${content.length()}";
+		output[] = "";
+		output[] = content;
+		return output.join("\r\n");
+	}
+	
+	static function readRequest( object o ) {
+		array headers = [];
+		string content = '';
+		boolean keepReading = true;
+		boolean seenLeadingLine = false;
+		
+		while( keepReading and not o.eos() ) {
+			string line = o.readln();
+			object match = null;
+
+			line = line.trim("\r\n");
+			if( line and (match = Regexp.match("POST (.*?) HTTP/1\.[10]", line)) ) {
+				headers['Request-URL'] = match.capture(0);
+				seenLeadingLine = true;
+			}
+			else if( line and (match = Regexp.match( "([^:]+): (.*)", line )) ) {
+				headers[match.capture(0)] = match.capture(1);
+			}
+			else if( not line and seenLeadingLine ) {
+				if( headers.keyExists('Content-Length') ) {
+					content = o.read( headers['Content-Length'].toNumber() ).trim("\r\n");
+				}
+				headers['Content'] = content;
+				keepReading = false;
+			}
+		}
+		return headers;
+	}
+	
+	static function handleRequest( object client, array request ) {
+		object content = JSON.parse(request['Content']);
+		array response = [ 'version' => content.version ];
+		if( content.method.index('.allocateObjectID') ) {
+			Math.srand(Sys.timestamp());
+			response['result'] = Math.randomNumber(1, 65535);
+		} else if( content.method.index('.save') ) {
+			response['result'] = true;
+		} else {
+			if( .queryReturnValues.keyExists(content.method) ) {
+				response['result'] = JSON.valueToJSON(.queryReturnValues[content.method]);
+			} else {
+				response['result'] = null;
+			}
+		}
+		client.write(.response(JSON.valueToJSON(response)));
+		client.flush();
+	}
+	
+	static function start() {
+		.server = Network.TCP.bind(Network.ANY4, 8080, Network.AF_AUTO);
+		if( .server ) {
+			do {
+				object client = .server.accept();
+				while( client ) {
+					monitor {
+						array request = .readRequest(client);
+						if( request ) {
+							.handleRequest(client, request);
+						} else {
+							client.close();
+							client = null;
+						}
+					} handle {
+						client.close();
+						client = null;
+					}
+				}
+			} while( .running );
+		}
+	}
+	
+	static function stop() {
+		.running = false;
+		if( .server ) {
+			.server.close();
+		}
+	}
+}
+
+function __handleSignal( number signal ) {
+	MockObjRunSrv.stop();
+}
+
+namespace CentionTestManager {
+	array tests;
+	function registerTest( string name, void klass ) {
+		if( not .tests.keyExists(name) ) {
+			.tests[name] = klass;
+		}
+	}
+	function runAllTests() {
+		.tests.each() using ( klass ) {
+			klass.run();
+		};
+	}
+	function runTest( string name ) {
+		if( .tests.keyExists(name) ) {
+			.tests[name].run();
+		}
+	}
+}
+
+class CentionTest {
+	static string __name;
+	static array __functions;
+	static boolean __requiresObjRunSrv;
+	static number __ObjRunSrvPID;
+	
+	directive ObjRunSrv() {
+		.__requiresObjRunSrv = true;
+	}
+	directive test( string func ) {
+		.__name = Class.name(self);
+		.__functions[] = func;
+		CentionTestManager.registerTest(.__name, self);
+	}
+	
+	static function run() {
+		object wrapper = new Class(self);
+		object test = wrapper.newObject();
+		object o = new Object(test);
+		
+		test.setUp();
+		
+		if( .__requiresObjRunSrv ) {
+			.__ObjRunSrvPID = Posix.fork();
+			if( .__ObjRunSrvPID == 0 ) {
+				Posix.registerSigHandler(Posix.SIGINT, '__handleSignal', null);
+				MockObjRunSrv.start();
+				Sys.exit(0);
+			}
+		}
+		
+		.__functions.each() using ( name ) {
+			object func = o.getFunction(name);
+			if( func ) {
+				monitor {
+					func.exec();
+				} handle {
+					Console.println("! [${.__name}] (${name}) Failed! " + err.str.trim(" \t\r\n"));
+				} else {
+					Console.println("- [${.__name}] (${name})");
+				}
+			} else {
+				raise new Error("Could not find function '${name}' in test '${.__name}'");
+			}
+		};
+		
+		if( .__requiresObjRunSrv ) {
+			Posix.kill(.__ObjRunSrvPID, Posix.SIGINT);
+		}
+		
+		test.tearDown();
+	}
+	
+	function setUp();
+	function tearDown();
+	
+	function assertEquals( void a, void b ) {
+		if( (a == b) == false ) {
+			raise new Error("'${a}' is not equal to '${b}'");
+		}
+	}
+	function assertGreaterThen( number a, number b ) {
+		if( (a > b) == false ) {
+			raise new Error("'${a}' is not greater then '${b}'");
+		}
+	}
+	function assertGreaterThenOrEqual( number a, number b ) {
+		if( (a >= b) == false ) {
+			raise new Error("'${a}' is not greater then or equal to '${b}'");
+		}
+	}
+	function assertTrue( boolean a ) {
+		if( a == false ) {
+			raise new Error("'${a}' is not true");
+		}
+	}
+	function assertFalse( boolean a ) {
+		if( a == true ) {
+			raise new Error("'${a}' is not false");
+		}
+	}
+	function assertNull( object a ) {
+		if( (a == null) == false ) {
+			raise new Error("'${a}' is not null");
+		}
+	}
+	function assertNotNull( object a ) {
+		if( (a != null) == false ) {
+			raise new Error("'${a}' is null");
+		}
+	}
+}
+

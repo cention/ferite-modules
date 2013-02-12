@@ -1,0 +1,92 @@
+uses 'console';
+uses 'network';
+uses 'posix';
+uses 'math';
+uses 'sys';
+uses 'JSON';
+
+class MockObjRunSrv {
+	static boolean keepRunning = true;
+	static object server;
+	static function response( string content ) {
+		array output;
+		output[] = "HTTP/1.0 200 Ok";
+		output[] = "Content-Type: text/json; charset=UTF-8";
+		output[] = "Content-Length: ${content.length()}";
+		output[] = "";
+		output[] = content;
+		return output.join("\r\n");
+	}
+	static function readRequest( object o ) {
+		array headers = [];
+		string content = '';
+		boolean keepReading = true;
+		boolean seenLeadingLine = false;
+		
+		while( keepReading and not o.eos() ) {
+			string line = o.readln();
+			object match = null;
+
+			line = line.trim("\r\n");
+			if( line and (match = Regexp.match("POST (.*?) HTTP/1\.[10]", line)) ) {
+				headers['Request-URL'] = match.capture(0);
+				seenLeadingLine = true;
+			}
+			else if( line and (match = Regexp.match( "([^:]+): (.*)", line )) ) {
+				headers[match.capture(0)] = match.capture(1);
+			}
+			else if( not line and seenLeadingLine ) {
+				if( headers.keyExists('Content-Length') ) {
+					content = o.read( headers['Content-Length'].toNumber() ).trim("\r\n");
+				}
+				headers['Content'] = content;
+				keepReading = false;
+			}
+		}
+		return headers;
+	}
+	static function run() {
+		.server = Network.TCP.bind(Network.ANY4, 8080, Network.AF_AUTO);
+		if( .server ) {
+			do {
+				object client = .server.accept();
+				while( client ) {
+					array request = .readRequest(client);
+					if( request ) {
+						object content = JSON.parse(request['Content']);
+						if( content.method.index('.allocateObjectID') ) {
+							Math.srand(Sys.timestamp());
+							client.write(.response(JSON.valueToJSON([
+								'version' => content.version,
+								'result' => Math.randomNumber(1, 65535)
+							])));
+						} else if( content.method.index('.save') ) {
+							client.write(.response(JSON.valueToJSON([
+								'version' => content.version,
+								'result' => true
+							])));
+						}
+						client.flush();
+					} else {
+						client.close();
+						client = null;
+					}
+				}
+			} while( .keepRunning );
+		}
+	}
+	static function stop() {
+		.keepRunning = false;
+		if( .server ) {
+			.server.close();
+		}
+	}
+}
+
+function handleSignal( number signal ) {
+	MockObjRunSrv.stop();
+}
+
+Posix.registerSigHandler(Posix.SIGINT, 'handleSignal', null);
+MockObjRunSrv.run();
+

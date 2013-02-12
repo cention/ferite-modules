@@ -1,0 +1,16 @@
+uses 'CentionTest';
+
+class TestExample extends CentionTest {
+	[test testStringEqual];
+	function testStringEqual() {
+		.assertEquals("Hello World!", "Hello World!");
+	}
+	
+	[test testBooleanEqual];
+	function testBooleanEqual() {
+		.assertEquals(true, false);
+	}
+}
+
+CentionTestManager.runAllTests();
+
