@@ -1,0 +1,14 @@
+uses 'ClearIt.feh';
+
+namespace ExternalQueueInterface {
+	void queue;
+	
+	function add( object errand ) {
+		.queue.add(errand);
+	}
+	function remove( object errand ) {
+		.queue.remove(errand);
+	}
+}
+
+ExternalQueueInterface.queue = ClearItQueue;

@@ -1,0 +1,5 @@
+protocol ExternalQueue {
+	static function add( object errand );
+	static function remove( object errand );
+}
+
