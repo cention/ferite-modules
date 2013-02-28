@@ -1,8 +1,39 @@
 uses 'ExternalQueue.feh';
 
 namespace ClearItPrototype {
+	function invoke( string url, string f, array parameters, string result ) {
+		array body = [ "${f}Response" => [ "${f}Response" => result ] ];
+		string message;
+		
+		message += "<?xml version='1.0' ?>";
+		message += '<soapenv:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"';
+		message += ' xmlns:xsd="http://www.w3.org/2001/XMLSchema"';
+		message += ' xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"';
+		message += ' xmlns:ser="services.soap.uqf.clearit.se">';
+		
+		message += '<soapenv:Body>';
+		message += "<ser:${f} soapenv:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">";
+		
+		parameters.eachWithIndex() using ( value, index ) {
+			string name = parameters.getName(index);
+			message += SOAP.toSOAP(name, value, '');
+		};
+		
+		message += "</ser:${f}>";
+		message += '</soapenv:Body>';
+		message += '</soapenv:Envelope>';
+		
+		return SOAP.RPC.sendRequest(url, '', message, body);
+	}
+	
 	function queueItemAndForget( string taskIdentifier, array data ) {
-		return SOAP.RPC.invoke(
+		/* return SOAP.RPC.invoke(
+			'http://127.151.206.149:8080/axis/services/UqfCention',
+			'queueItemAndForget',
+			[ 'taskIdentifier' => taskIdentifier, 'data' => data.join(';') ],
+			'number'
+		); */
+		return .invoke(
 			'http://127.151.206.149:8080/axis/services/UqfCention',
 			'queueItemAndForget',
 			[ 'taskIdentifier' => taskIdentifier, 'data' => data.join(';') ],
