@@ -3,6 +3,10 @@ uses 'ClearIt.feh';
 namespace ExternalQueueInterface {
 	void queue;
 	
+	function name() {
+		return .queue.name();
+	}
+	
 	function add( object errand ) {
 		.queue.add(errand);
 	}

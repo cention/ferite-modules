@@ -44,10 +44,10 @@ namespace ClearItPrototype {
 
 class ClearItQueue implements ExternalQueue {
 	static function name() {
-		return 'clearit');
+		return 'clearit';
 	}
 	static function add( object errand ) {
-		number id = ClearItPrototype.queueItemAndForget('cention', [ 'http://127.151.206.145/workflow/-/external/open/' + errand.id ]);
+		number id = ClearItPrototype.queueItemAndForget('cention', [ 'http://217.151.206.145/workflow/-/external/open/' + errand.id ]);
 		if( id > 0 ) {
 			//errand.setValue('externalID', id);
 			//errand.save();
