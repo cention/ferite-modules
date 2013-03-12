@@ -40,6 +40,23 @@ namespace ClearItPrototype {
 			'number'
 		);
 	}
+	
+	function queueItem( string string taskIdentifier, array data, string creationTime ) {
+		return .invoke(
+			'http://217.151.206.149:8080/axis/services/UqfCention',
+			'queueItem',
+			[ 'taskIdentifier' => taskIdentifier, 'data' => data.join(';'), 'creationTime' => creationTime ],
+			'number'
+		);
+	}
+	function endItem( number itemId, number reason ) {
+		return .invoke(
+			'http://217.151.206.149:8080/axis/services/UqfCention',
+			'endItem',
+			[ 'itemId' => itemId, 'reason' => reason ],
+			'number'
+		);
+	}
 }
 
 class ClearItQueue implements ExternalQueue {
@@ -47,17 +64,24 @@ class ClearItQueue implements ExternalQueue {
 		return 'clearit';
 	}
 	static function add( object errand ) {
-		number id = ClearItPrototype.queueItemAndForget('cention', [ 'http://217.151.206.145/workflow/-/external/open/' + errand.id ]);
+		number id = ClearItPrototype.queueItem('cention', [ 'http://217.151.206.145/workflow/-/external/open/' + errand.id ],
+			Date.localDate(errand.timestampArrive + Date.timezone()).format('%F %H:%M'));
 		if( id > 0 ) {
-			//errand.setValue('externalID', id);
-			//errand.save();
+			errand.setValue('externalID', id);
+			errand.save();
 			return true;
 		}
 		return false;
 	}
 	
 	static function remove( object errand ) {
-		return true;
+		number id = ClearItPrototype.endItem(errand.externalID, 0);
+		if( id > 0 ) {
+			errand.setValue('externalID', 0);
+			errand.save();
+			return true;
+		}
+		return false;
 	}
 }
 
