@@ -47,7 +47,7 @@ namespace ClearItPrototype {
 	function queueCentionItem( number ItemId, string taskIdentifier, string url, string errandId, string area, string channel, string creationTime ) {
 		return .invoke(
 			'http://217.151.206.149:8080/axis/services/UqfCention',
-			'queueItemAndForget',
+			'queueCentionItem',
 			[
 				'ItemId' => ItemId,
 				'taskIdentifier' => taskIdentifier,
@@ -73,7 +73,7 @@ namespace ClearItPrototype {
 	function endCentionItem( number itemId, number reason ) {
 		return .invoke(
 			'http://217.151.206.149:8080/axis/services/UqfCention',
-			'endItem',
+			'endCentionItem',
 			[ 'itemId' => itemId, 'reason' => reason ],
 			'number'
 		);
@@ -105,7 +105,7 @@ class ClearItQueue implements ExternalQueue {
 	}
 	
 	static function remove( object errand ) {
-		number id = ClearItPrototype.endItem(errand.externalID, 0);
+		number id = ClearItPrototype.endCentionItem(errand.externalID, 0);
 		if( id > 0 ) {
 			errand.setValue('queuedInExternal', false);
 			errand.save();
