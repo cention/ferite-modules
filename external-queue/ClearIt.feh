@@ -27,12 +27,6 @@ namespace ClearItPrototype {
 	}
 	
 	function queueItemAndForget( string taskIdentifier, array data ) {
-		/* return SOAP.RPC.invoke(
-			'http://217.151.206.149:8080/axis/services/UqfCention',
-			'queueItemAndForget',
-			[ 'taskIdentifier' => taskIdentifier, 'data' => data.join(';') ],
-			'number'
-		); */
 		return .invoke(
 			'http://217.151.206.149:8080/axis/services/UqfCention',
 			'queueItemAndForget',
@@ -41,7 +35,7 @@ namespace ClearItPrototype {
 		);
 	}
 	
-	function queueItem( string string taskIdentifier, array data, string creationTime ) {
+	function queueItem( string taskIdentifier, array data, string creationTime ) {
 		return .invoke(
 			'http://217.151.206.149:8080/axis/services/UqfCention',
 			'queueItem',
@@ -49,7 +43,34 @@ namespace ClearItPrototype {
 			'number'
 		);
 	}
+	
+	function queueCentionItem( number ItemId, string taskIdentifier, string url, string errandId, string area, string channel, string creationTime ) {
+		return .invoke(
+			'http://217.151.206.149:8080/axis/services/UqfCention',
+			'queueItemAndForget',
+			[
+				'ItemId' => ItemId,
+				'taskIdentifier' => taskIdentifier,
+				'url' => url,
+				'errandId' => errandId,
+				'area' => area,
+				'channel' => channel,
+				'creationTime' => creationTime
+			],
+			'number'
+		);
+	}
+	
 	function endItem( number itemId, number reason ) {
+		return .invoke(
+			'http://217.151.206.149:8080/axis/services/UqfCention',
+			'endItem',
+			[ 'itemId' => itemId, 'reason' => reason ],
+			'number'
+		);
+	}
+	
+	function endCentionItem( number itemId, number reason ) {
 		return .invoke(
 			'http://217.151.206.149:8080/axis/services/UqfCention',
 			'endItem',
@@ -63,10 +84,19 @@ class ClearItQueue implements ExternalQueue {
 	static function name() {
 		return 'clearit';
 	}
+	
 	static function add( object errand ) {
-		number id = ClearItPrototype.queueItem('cention', [ 'http://217.151.206.145/workflow/-/external/open/' + errand.id ],
-			Date.localDate(errand.timestampArrive + Date.timezone()).format('%F %H:%M'));
+		number id = ClearItPrototype.queueCentionItem(
+				errand.externalID,
+				'cention',
+				'http://217.151.206.145/workflow/-/external/open/' + errand.id,
+				'errand/' + errand.id,
+				errand.targetArea.name + '/' + errand.targetArea.id,
+				errand.service.name,
+				Date.localDate(errand.timestampArrive + Date.timezone()).format('%F %H:%M')
+			);
 		if( id > 0 ) {
+			errand.setValue('queuedInExternal', true);
 			errand.setValue('externalID', id);
 			errand.save();
 			return true;
@@ -77,7 +107,7 @@ class ClearItQueue implements ExternalQueue {
 	static function remove( object errand ) {
 		number id = ClearItPrototype.endItem(errand.externalID, 0);
 		if( id > 0 ) {
-			errand.setValue('externalID', 0);
+			errand.setValue('queuedInExternal', false);
 			errand.save();
 			return true;
 		}
