@@ -8,10 +8,10 @@ namespace ExternalQueueInterface {
 	}
 	
 	function add( object errand ) {
-		.queue.add(errand);
+		return .queue.add(errand);
 	}
 	function remove( object errand ) {
-		.queue.remove(errand);
+		return .queue.remove(errand);
 	}
 }
 
