@@ -49,7 +49,7 @@ namespace ClearItPrototype {
 			'http://217.151.206.149:8080/axis/services/UqfCention',
 			'queueCentionItem',
 			[
-				'ItemId' => ItemId,
+				'ItemId' => (ItemId > 0 ? ItemId : -1),
 				'taskIdentifier' => taskIdentifier,
 				'url' => url,
 				'errandId' => errandId,
