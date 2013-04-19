@@ -104,8 +104,20 @@ class ClearItQueue implements ExternalQueue {
 		return false;
 	}
 	
-	static function remove( object errand ) {
-		number id = ClearItPrototype.endCentionItem(errand.externalID, 0);
+	static function remove( object errand, number type ) {
+		number id = 0;
+		string reason;
+		switch( type ) {
+			case Workflow.Errand.ACTION_ANSWER:         reason = 'Answered'; break;
+			case Workflow.Errand.ACTION_DELETE:         reason = 'Deleted'; break;
+			case Workflow.Errand.ACTION_SAVE:           reason = 'Saved'; break;
+			case Workflow.Errand.ACTION_AGENT_FORWARD:  reason = 'Forwarded to Agent'; break;
+			case Workflow.Errand.ACTION_AREA_FORWARD:   reason = 'Forwarded to Area'; break;
+			case Workflow.Errand.ACTION_FOLDER_FORWARD: reason = 'Moved to Folder'; break;
+			case Workflow.Errand.ACTION_INBOX_RETURN:   reason = 'Returned to Inbox'; break;
+			default:                                    reason = 'Pulled'; break;
+		}
+		id = ClearItPrototype.endCentionItem(errand.externalID, reason);
 		if( id > 0 ) {
 			errand.setValue('queuedInExternal', false);
 			errand.save();

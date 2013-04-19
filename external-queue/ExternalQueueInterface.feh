@@ -11,7 +11,10 @@ namespace ExternalQueueInterface {
 		return .queue.add(errand);
 	}
 	function remove( object errand ) {
-		return .queue.remove(errand);
+		return .queue.remove(errand, 0);
+	}
+	function remove( object errand, number type ) {
+		return .queue.remove(errand, type);
 	}
 }
 
