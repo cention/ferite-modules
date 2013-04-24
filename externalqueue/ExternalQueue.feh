@@ -1,6 +1,0 @@
-protocol ExternalQueue {
-	static function name();
-	static function add( object errand );
-	static function remove( object errand, number type );
-}
-

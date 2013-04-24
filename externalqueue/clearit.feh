@@ -1,6 +1,6 @@
 uses 'ExternalQueue.feh';
 
-namespace ClearItPrototype {
+namespace ClearInteract {
 	function invoke( string url, string f, array parameters, string result ) {
 		array body = [ "${f}Response" => [ "${f}Return" => result ] ];
 		string message;
@@ -26,24 +26,6 @@ namespace ClearItPrototype {
 		return SOAP.RPC.sendRequest(url, '', message, body);
 	}
 	
-	function queueItemAndForget( string taskIdentifier, array data ) {
-		return .invoke(
-			'http://217.151.206.149:8080/axis/services/UqfCention',
-			'queueItemAndForget',
-			[ 'taskIdentifier' => taskIdentifier, 'data' => data.join(';') ],
-			'number'
-		);
-	}
-	
-	function queueItem( string taskIdentifier, array data, string creationTime ) {
-		return .invoke(
-			'http://217.151.206.149:8080/axis/services/UqfCention',
-			'queueItem',
-			[ 'taskIdentifier' => taskIdentifier, 'data' => data.join(';'), 'creationTime' => creationTime ],
-			'number'
-		);
-	}
-	
 	function queueCentionItem( number ItemId, string taskIdentifier, string url, string errandId, string area, string channel, string creationTime ) {
 		return .invoke(
 			'http://217.151.206.149:8080/axis/services/UqfCention',
@@ -61,15 +43,6 @@ namespace ClearItPrototype {
 		);
 	}
 	
-	function endItem( number itemId, string reason ) {
-		return .invoke(
-			'http://217.151.206.149:8080/axis/services/UqfCention',
-			'endItem',
-			[ 'itemId' => itemId, 'reason' => reason ],
-			'number'
-		);
-	}
-	
 	function endCentionItem( number itemId, number reason ) {
 		return .invoke(
 			'http://217.151.206.149:8080/axis/services/UqfCention',
@@ -80,13 +53,13 @@ namespace ClearItPrototype {
 	}
 }
 
-class ClearItQueue implements ExternalQueue {
+class ClearInteractQueue implements ExternalQueue {
 	static function name() {
-		return 'clearit';
+		return 'clearinteract';
 	}
 	
 	static function add( object errand ) {
-		number id = ClearItPrototype.queueCentionItem(
+		number id = ClearInteract.queueCentionItem(
 				errand.externalID,
 				'cention',
 				'http://217.151.206.145/workflow/-/external/open/' + errand.id,
@@ -117,7 +90,7 @@ class ClearItQueue implements ExternalQueue {
 			case Workflow.Errand.ACTION_INBOX_RETURN:   reason = 'Returned to Inbox'; break;
 			default:                                    reason = 'Pulled'; break;
 		}
-		id = ClearItPrototype.endCentionItem(errand.externalID, reason);
+		id = ClearInteract.endCentionItem(errand.externalID, reason);
 		if( id > 0 ) {
 			errand.setValue('queuedInExternal', false);
 			errand.save();

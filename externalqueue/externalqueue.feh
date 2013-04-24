@@ -1,0 +1,36 @@
+protocol ExternalQueue {
+	static function name();
+	static function add( object errand );
+	static function remove( object errand, number type );
+}
+
+uses 'clearinteract.feh';
+
+namespace ExternalQueueInterface {
+	void queue;
+	
+	function name() {
+		return .queue.name();
+	}
+	
+	function add( object errand ) {
+		return .queue.add(errand);
+	}
+	function remove( object errand ) {
+		return .queue.remove(errand, 0);
+	}
+	function remove( object errand, number type ) {
+		return .queue.remove(errand, type);
+	}
+	
+	function enableClearInteract( boolean status ) {
+		if( status ) {
+			.queue = ClearInteractQueue;
+		}
+	}
+	function enableSolidus( boolean status ) {
+		
+	}
+}
+
+
