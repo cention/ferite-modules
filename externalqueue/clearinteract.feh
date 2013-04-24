@@ -46,7 +46,7 @@ namespace ClearInteract {
 		);
 	}
 	
-	function endCentionItem( number itemId, number reason ) {
+	function endCentionItem( number itemId, string reason ) {
 		return .invoke(
 			"http://${.host}:${.port}/axis/services/UqfCention",
 			'endCentionItem',
@@ -76,7 +76,7 @@ class ClearInteractQueue implements ExternalQueue {
 		id = ClearInteract.queueCentionItem(
 				errand.externalID,
 				errand.targetArea.externalID,
-				"${.openErrandURL}/workflow/-/external/open/${errand.id}" +
+				"${.openErrandURL}/workflow/-/external/open/${errand.id}",
 				'errand/' + errand.id,
 				errand.targetArea.name + '/' + errand.targetArea.id,
 				errand.service.name,
