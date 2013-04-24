@@ -1,6 +1,9 @@
-uses 'ExternalQueue.feh';
+uses 'externalqueue';
 
 namespace ClearInteract {
+	string host = 'localhost';
+	number port = 8080;
+	
 	function invoke( string url, string f, array parameters, string result ) {
 		array body = [ "${f}Response" => [ "${f}Return" => result ] ];
 		string message;
@@ -28,7 +31,7 @@ namespace ClearInteract {
 	
 	function queueCentionItem( number ItemId, string taskIdentifier, string url, string errandId, string area, string channel, string creationTime ) {
 		return .invoke(
-			'http://217.151.206.149:8080/axis/services/UqfCention',
+			"http://${.host}:${.port}/axis/services/UqfCention",
 			'queueCentionItem',
 			[
 				'ItemId' => (ItemId > 0 ? ItemId : -1),
@@ -45,7 +48,7 @@ namespace ClearInteract {
 	
 	function endCentionItem( number itemId, number reason ) {
 		return .invoke(
-			'http://217.151.206.149:8080/axis/services/UqfCention',
+			"http://${.host}:${.port}/axis/services/UqfCention",
 			'endCentionItem',
 			[ 'itemId' => itemId, 'reason' => reason ],
 			'number'
@@ -54,15 +57,26 @@ namespace ClearInteract {
 }
 
 class ClearInteractQueue implements ExternalQueue {
+	static string serverAddress = 'localhost';
+	static string openErrandURL = 'http://localhost';
+	
 	static function name() {
 		return 'clearinteract';
 	}
+	static function configure( array options ) {
+		if( options.keyExists('server-address') )
+			.serverAddress = options['server-address'];
+		if( options.keyExists('open-errand-url') )
+			.openErrandURL = options['open-errand-url'];
+	}
 	
 	static function add( object errand ) {
-		number id = ClearInteract.queueCentionItem(
+		number id;
+		ClearInteract.host = .serverAddress;
+		id = ClearInteract.queueCentionItem(
 				errand.externalID,
-				'cention',
-				'http://217.151.206.145/workflow/-/external/open/' + errand.id,
+				errand.targetArea.externalID,
+				"${.openErrandURL}/workflow/-/external/open/${errand.id}" +
 				'errand/' + errand.id,
 				errand.targetArea.name + '/' + errand.targetArea.id,
 				errand.service.name,
@@ -90,6 +104,7 @@ class ClearInteractQueue implements ExternalQueue {
 			case Workflow.Errand.ACTION_INBOX_RETURN:   reason = 'Returned to Inbox'; break;
 			default:                                    reason = 'Pulled'; break;
 		}
+		ClearInteract.host = .serverAddress;
 		id = ClearInteract.endCentionItem(errand.externalID, reason);
 		if( id > 0 ) {
 			errand.setValue('queuedInExternal', false);

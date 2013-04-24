@@ -1,16 +1,30 @@
 protocol ExternalQueue {
 	static function name();
+	static function configure( array options );
 	static function add( object errand );
 	static function remove( object errand, number type );
 }
 
-uses 'clearinteract.feh';
-
 namespace ExternalQueueInterface {
+	boolean _enabled = false;
 	void queue;
+	
+	function enabled() {
+		return (._enabled and .queue ? true : false);
+	}
+	function enable( void queue ) {
+		.queue = queue;
+		._enabled = true;
+	}
+	function disable() {
+		._enabled = false;
+	}
 	
 	function name() {
 		return .queue.name();
+	}
+	function configure( array options ) {
+		.queue.configure(options);
 	}
 	
 	function add( object errand ) {
@@ -21,16 +35,8 @@ namespace ExternalQueueInterface {
 	}
 	function remove( object errand, number type ) {
 		return .queue.remove(errand, type);
-	}
-	
-	function enableClearInteract( boolean status ) {
-		if( status ) {
-			.queue = ClearInteractQueue;
-		}
-	}
-	function enableSolidus( boolean status ) {
-		
-	}
+	}	
 }
 
+uses 'clearinteract.feh';
 

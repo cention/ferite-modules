@@ -1,20 +1,19 @@
 <?xml version="1.0" ?>
 <yard name="ExternalQueue">
 
-	<property id="name" value="cention-external-queue" />
+	<property id="name" value="cention-externalqueue" />
 	<property id="version" value="3.2" />
 	
-	<collection id="external-queue">
+	<collection id="externalqueue">
 		<property type="prefix" value="$(FeriteModuleSourceDir)" />
 
 		<list type="source">
-			<file name="ExternalQueueInterface.feh" />
-			<file name="ExternalQueue.feh" />
-			<file name="ClearIt.feh" />
+			<file name="externalqueue.feh" />
+			<file name="clearinteract.feh" />
 		</list>
 	</collection>
 
 	<phase id="install">
-		<perform action="install" target="external-queue" />
+		<perform action="install" target="externalqueue" />
 	</phase>
 </yard>
