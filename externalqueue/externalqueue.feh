@@ -1,8 +1,9 @@
 protocol ExternalQueue {
 	static function name();
 	static function configure( array options );
-	static function add( object errand );
+	static function add( object errand, object user );
 	static function remove( object errand, number type );
+	static function pull( object errand);
 }
 
 namespace ExternalQueueInterface {
@@ -28,14 +29,20 @@ namespace ExternalQueueInterface {
 	}
 	
 	function add( object errand ) {
-		return .queue.add(errand);
+		return .queue.add(errand, null);
+	}
+	function add( object errand, object user ) {
+		return .queue.add(errand, user);
 	}
 	function remove( object errand ) {
 		return .queue.remove(errand, 0);
 	}
 	function remove( object errand, number type ) {
 		return .queue.remove(errand, type);
-	}	
+	}
+	static function pull( object errand ) {
+		return .queue.remove(errand);
+	}
 }
 
 uses 'clearinteract.feh';
