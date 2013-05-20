@@ -1,0 +1,265 @@
+uses 'externalqueue';
+uses 'SOAP';
+
+class AddRequestResult {
+	number EWT;
+	number OpenMediaID;
+	number QueuePosition;
+	number RequestStatus;
+	
+	[rpc_import 'EWT:number', 'OpenMediaID:number', 'QueuePosition:number', 'RequestStatus:string'];
+}
+
+class GetOpenMediaRequestStatusByIDResult {
+	string TimeStamp;
+	array OpenMediaRequests;
+	
+	[rpc_import 'TimeStamp:string', 'OpenMediaRequests:array<OpenMediaRequest>'];
+}
+
+class OpenMediaRequest {
+	number ID;
+	number AgentID;
+	string LogonID;
+	string Status;
+	number TenantID;
+	string TimeStamp;
+	
+	[rpc_import 'AgentID:number', 'ID:number' , 'LogonID:number' , 'Status:string' , 'TenantID:number' , 'TimeStamp:string'];
+}
+
+class IVRInformation {
+	string Label;
+	string Data;
+	
+	constructor( string label, string data ) {
+		.Label = label;
+		.Data = data;
+	}
+	
+	[rpc_export Label, Data];
+}
+
+namespace Solidus {
+	string serverAddress;
+	string soapActionURL;
+	
+	function setDefaults( string serverAddress, string soapActionURL ) {
+		.serverAddress = serverAddress;
+		.soapActionURL = soapActionURL;
+	}
+	
+	function sendRequest( string url, string action, string f, array parameters, string result, string resultName ) {
+		array body = [ "${f}Response" => [ "${resultName}" => result ] ];
+		string message;
+		
+		message += "<?xml version='1.0' ?>";
+		message += '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"';
+		message += ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"';
+		message += ' xmlns:xsd="http://www.w3.org/2001/XMLSchema">';
+		message += '<soap:Body>';
+		message += "<${f} xmlns=\"${.soapActionURL}/\">";
+		
+		if( f != 'GetOpenMediaRequestStatusByID' )
+			message += '<request>';
+		
+		parameters.eachWithIndex() using ( value, index ) {
+			string name = parameters.getName(index);
+			message += SOAP.toSOAP( name, value, (f != 'GetOpenMediaRequestStatusByID' ? 'http://schemas.datacontract.org/2004/07/Solidus.OpenMedia.Contracts.DataContracts' : '') );
+		};
+		
+		if( f != 'GetOpenMediaRequestStatusByID' )
+			message += '</request>';
+		
+		message += "</${f}>";
+		message += '</soap:Body>';
+		message += '</soap:Envelope>';
+		
+		return SOAP.RPC.sendRequest( url, action, message, body );
+	}
+	function addRequest( number serviceGroupID, string privateData ) {
+		return .addRequest(serviceGroupID, 0, false, privateData);
+	}
+	function addRequest( number serviceGroupID, number preferredAgentID, boolean forceToPreferredAgent, string privateData ) {
+		object result;
+
+		monitor {
+			array parameters;
+
+			parameters['ForceToPreferredAgent'] = false;
+			parameters['IVRInfo'] = [ new IVRInformation('label1', 'data1'), new IVRInformation(), new IVRInformation() ];
+			parameters['PreferredAgentID'] = preferredAgentID;
+			parameters['PrivateData'] = privateData;
+			parameters['ServiceGroupID'] = serviceGroupID;
+			parameters['ServiceGroupName'] = '';
+			parameters['TenantID'] = -1;
+
+			result = .sendRequest(
+					.serverAddress + '/OpenMediaService',
+					.soapActionURL + '/IOpenMediaService/AddRequest',
+					'AddRequest',
+					parameters,
+					'AddRequestResult',
+					'AddRequestResult'
+				);
+		} handle {
+			result = null;
+		}
+		
+		return result;
+	}
+
+	function cancelRequest( number openMediaID ) {
+		return .cancelRequest(openMediaID, true);
+	}
+	function cancelRequest( number openMediaID, boolean cancelIfAllocated ) {
+		boolean result;
+		
+		monitor {
+			array parameters;
+			
+			parameters['CancelIfAllocated'] = cancelIfAllocated;
+			parameters['DoNotReport'] = false;
+			parameters['OpenMediaID'] = openMediaID;
+			
+			result = .sendRequest(
+				.serverAddress + '/OpenMediaService',
+				.soapActionURL + '/IOpenMediaService/CancelRequest',
+				'CancelRequest',
+				parameters,
+				'boolean',
+				'CancelRequestResult'
+			);
+		} handle {
+			result = false;
+		}
+		
+		return result;
+	}
+
+	function getOpenMediaRequestStatus( number openMediaID ) {
+		object result;
+
+		monitor {
+			array parameters;
+		
+			parameters['openMediaID'] = openMediaID;
+			
+			result = .sendRequest(
+				.serverAddress + '/OpenMediaService',
+				.soapActionURL + '/IOpenMediaService/GetOpenMediaRequestStatusByID',
+				'GetOpenMediaRequestStatusByID',
+				parameters,
+				'GetOpenMediaRequestStatusByIDResult',
+				'GetOpenMediaRequestStatusByIDResult'
+			);
+		} handle {
+			result = null;
+		}
+	
+		return result;
+	}
+}
+
+class SolidusQueue implements ExternalQueue {
+	string serverAddress;
+	string openErrandURL;
+	
+	static function name() {
+		return 'solidus';
+	}
+	static function configure( array options ) {
+		if( options.keyExists('server-address') )
+			.serverAddress = options['server-address'];
+		if( options.keyExists('open-errand-url') )
+			.openErrandURL = options['open-errand-url'];
+	}
+	
+	static function add( object errand, object user ) {
+		object area = Workflow.Area.load(errand.targetArea.id);
+		
+		string privateData = .openErrandURL + '/workflow/-/external/open/' + errand.id;
+		number preferredAgentID = (user ? user.solidusAgentID : 0);
+		boolean forceToPreferredAgent = (preferredAgentID ? true : false);
+		
+		object result;
+		
+		Solidus.setDefaults(.serverAddress, 'http://tempuri.org');
+		
+		Logger.info(Logger.APPLICATION_SOLIDUS, "Sending add request with preferredAgentID as ${preferredAgentID} for Workflow.Errand(${errand.id}).");
+		
+		result = Solidus.addRequest(area.solidusServiceGroupID, preferredAgentID, forceToPreferredAgent, privateData);
+		if( result and result.OpenMediaID > 0 ) {
+			Logger.info(Logger.APPLICATION_SOLIDUS, "Workflow.Errand(${errand.id}) have been successfully queued as ${result.OpenMediaID}. Queue position is ${result.QueuePosition}, EWT is ${result.EWT}.");
+			errand.setValue('queuedInExternal', true);
+			errand.setValue('solidusOpenMediaID', result.OpenMediaID);
+			errand.save();
+			return true;
+		}
+		else {
+			Logger.info(Logger.APPLICATION_SOLIDUS, "Failed to add Workflow.Errand(${errand.id}) to queue.");
+			return false;
+		}
+	}
+	
+	static function remove( object errand, number type ) {
+		return ._remove(errand, true);
+	}
+	static function _remove( object errand, boolean cancelIfAllocated ) {
+		Solidus.setDefaults(.serverAddress, 'http://tempuri.org');
+		Logger.info(Logger.APPLICATION_SOLIDUS, "Sending cancel request for Workflow.Errand(${errand.id})");
+		if( Solidus.cancelRequest(errand.solidusOpenMediaID, cancelIfAllocated) ) {
+			Logger.info(Logger.APPLICATION_SOLIDUS, "Cancel request returned true for Workflow.Errand(${errand.id})");
+			errand.setValue('queuedInExternal', false);
+			errand.setValue('solidusOpenMediaID', 0);
+			errand.save();
+			return true;
+		} else {
+			Logger.info(Logger.APPLICATION_SOLIDUS, "Cancel request returned false for Workflow.Errand(${errand.id})");
+			return false;
+		}
+	}
+	
+	static function pull( object errand ) {
+		boolean failed = true;
+		object status;
+				
+		Logger.info(Logger.APPLICATION_SOLIDUS, "Pulling errand ${errand.id} which is registered as ${errand.solidusOpenMediaID}");
+		
+		Solidus.setDefaults(.serverAddress, 'http://tempuri.org');
+		
+		status = Solidus.getOpenMediaRequestStatus(errand.solidusOpenMediaID);
+		if( status ) {
+			if( status.OpenMediaRequests )  {
+				if( status.OpenMediaRequests[0].Status == 'Queued' /* Queued at the Service Group */ ) {
+					Logger.info(Logger.APPLICATION_SOLIDUS, "Status in Solidus for errand ${errand.id} (${errand.solidusOpenMediaID}) is 'Queued at the Service Group'");
+					if( SolidusQueue._remove(errand, false) ) {
+						Logger.info(Logger.APPLICATION_SOLIDUS, "Successfully canceled errand ${errand.id} in Solidus");
+						failed = false;
+					} else {
+						Logger.info(Logger.APPLICATION_SOLIDUS, "Unable to cancel errand ${errand.id} (${errand.solidusOpenMediaID}) in Solidus");
+					}
+				} else if( status.OpenMediaRequests[0].Status == 'Complete' /* Completed */ ) {
+					Logger.info(Logger.APPLICATION_SOLIDUS, "Status in Solidus for errand ${errand.id} (${errand.solidusOpenMediaID}) is 'Completed'");
+					failed = false;
+					errand.setValue('queuedInExternal', false);
+					errand.setValue('solidusOpenMediaID', 0);
+					errand.save();
+				} else {
+					// TODO: Log status message here
+				}
+			} else {
+				Logger.info(Logger.APPLICATION_SOLIDUS, "Got status from Solius for errand ${errand.id} (${errand.solidusOpenMediaID}) but media had no previous requests registered");
+			}
+		} else {
+			Logger.info(Logger.APPLICATION_SOLIDUS, "Unable to get status from Solidus for errand ${errand.id} (${errand.solidusOpenMediaID})");
+			failed = false;
+			errand.setValue('queuedInExternal', false);
+			errand.setValue('solidusOpenMediaID', 0);
+			errand.save();
+		}
+		
+		return failed;
+	}
+}
+
