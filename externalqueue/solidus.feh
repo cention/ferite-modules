@@ -42,8 +42,8 @@ class IVRInformation {
 }
 
 namespace Solidus {
-	string serverAddress;
-	string soapActionURL;
+	static string serverAddress;
+	static string soapActionURL;
 	
 	function setDefaults( string serverAddress, string soapActionURL ) {
 		.serverAddress = serverAddress;
