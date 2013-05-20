@@ -70,7 +70,7 @@ class ClearInteractQueue implements ExternalQueue {
 			.openErrandURL = options['open-errand-url'];
 	}
 	
-	static function add( object errand ) {
+	static function add( object errand, object user ) {
 		number id;
 		ClearInteract.host = .serverAddress;
 		id = ClearInteract.queueCentionItem(
@@ -112,6 +112,10 @@ class ClearInteractQueue implements ExternalQueue {
 			return true;
 		}
 		return false;
+	}
+	
+	static function pull( object errand ) {
+		return .remove(errand, 0);
 	}
 }
 
