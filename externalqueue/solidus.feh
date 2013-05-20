@@ -1,4 +1,5 @@
 uses 'externalqueue';
+uses 'logger';
 uses 'SOAP';
 
 class AddRequestResult {

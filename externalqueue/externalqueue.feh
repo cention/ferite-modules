@@ -41,7 +41,7 @@ namespace ExternalQueueInterface {
 		return .queue.remove(errand, type);
 	}
 	static function pull( object errand ) {
-		return .queue.remove(errand);
+		return .queue.pull(errand);
 	}
 }
 
