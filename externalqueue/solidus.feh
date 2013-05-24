@@ -163,8 +163,8 @@ namespace Solidus {
 }
 
 class SolidusQueue implements ExternalQueue {
-	string serverAddress;
-	string openErrandURL;
+	static string serverAddress;
+	static string openErrandURL;
 	
 	static function name() {
 		return 'solidus';
