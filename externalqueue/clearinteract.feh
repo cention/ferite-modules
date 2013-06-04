@@ -29,7 +29,9 @@ namespace ClearInteract {
 		return SOAP.RPC.sendRequest(url, ' ' /* String with a space is correct */, message, body);
 	}
 	
-	function queueCentionItem( number ItemId, string taskIdentifier, string url, string errandId, string area, string channel, string creationTime ) {
+	function queueCentionItem( number ItemId, string taskIdentifier, string url, string errandId,
+		string area, string channel, string creationTime )
+	{
 		return .invoke(
 			"http://${.host}:${.port}/axis/services/UqfCention",
 			'queueCentionItem',
@@ -54,6 +56,15 @@ namespace ClearInteract {
 			'number'
 		);
 	}
+
+	function pullCentionItem( number itemId ) {
+		return .invoke(
+			"http://${.host}:${.port}/axis/services/UqfCention",
+			'pullCentionItem',
+			[ 'itemId' => itemId, 'reason' => 'Pulled' ],
+			'number'
+		);
+	}
 }
 
 class ClearInteractQueue implements ExternalQueue {
@@ -70,7 +81,7 @@ class ClearInteractQueue implements ExternalQueue {
 			.openErrandURL = options['open-errand-url'];
 	}
 	
-	static function add( object errand, object user ) {
+	static function addErrand( object errand, object user ) {
 		number id;
 		ClearInteract.host = .serverAddress;
 		id = ClearInteract.queueCentionItem(
@@ -91,7 +102,7 @@ class ClearInteractQueue implements ExternalQueue {
 		return false;
 	}
 	
-	static function remove( object errand, number type ) {
+	static function removeErrand( object errand, number type ) {
 		number id = 0;
 		string reason;
 		switch( type ) {
@@ -114,8 +125,66 @@ class ClearInteractQueue implements ExternalQueue {
 		return false;
 	}
 	
-	static function pull( object errand ) {
-		return .remove(errand, 0);
+	static function pullErrand( object errand ) {
+		number id = 0;
+		ClearInteract.host = .serverAddress;
+		id = ClearInteract.endCentionItem(errand.externalID, reason);
+		if( id > 0 ) {
+			errand.setValue('queuedInExternal', false);
+			errand.save();
+			return true;
+		}
+		return false;
+	}
+
+	static function startChatSession( object session ) {
+		object date = Date.localDate(session.timestampArrive + Date.timezone());
+		number id = 0;
+		ClearInteract.host = .serverAddress;
+		id = ClearInteract.queueCentionSession(-1, session.area.externalID, "", date.format('%F %H:%M'));
+		if( id > 0 ) {
+			session.setValue('externalSessionID', id);
+			return true;
+		}
+		return false;
+	}
+
+	static function endChatSession( number id ) {
+		ClearInteract.host = .serverAddress;
+		if( ClearInteract.endCentionSession(id, 'Finished') > 0 )
+			return true;
+		return false;
+	}
+
+	static function addChat( object chat ) {
+		number id = 0;
+		ClearInteract.host = .serverAddress;
+		id = ClearInteract.stampCentionItemStarted(
+				-1,
+				chat.area.externalID,
+				"${.openErrandURL}/admin/agents/edit/-/chat/open/${chat.id}",
+				"chat/${chat.id}",
+				"${chat.area.name}/${chat.area.id}",
+				"Chat",
+				Date.localDate(chat.timestampStarted + Date.timezone()).format('%F %H:%M')
+			);
+		if( id > 0 ) {
+			chat.setValue('queuedInExternal', true);
+			chat.setValue('externalID', id);
+			chat.save();
+		}
+		return true;
+	}
+
+	static function removeChat( object chat ) {
+		number id = 0;
+		ClearInteract.host = .serverAddress;
+		id = ClearInteract.stampCentionItemEnded(chat.externalID, 'Finished');
+		if( id > 0 ) {
+			chat.setValue('queuedInExternal', false);
+			chat.save();
+			return true;
+		}
+		return false;
 	}
 }
-
