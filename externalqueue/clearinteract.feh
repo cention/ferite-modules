@@ -29,7 +29,9 @@ namespace ClearInteract {
 		return SOAP.RPC.sendRequest(url, ' ' /* String with a space is correct */, message, body);
 	}
 	
-	function queueCentionItem( number ItemId, string taskIdentifier, string url, string errandId, string area, string channel, string creationTime ) {
+	function queueCentionItem( number ItemId, string taskIdentifier, string url, string errandId,
+		string area, string channel, string creationTime )
+	{
 		return .invoke(
 			"http://${.host}:${.port}/axis/services/UqfCention",
 			'queueCentionItem',
@@ -54,45 +56,87 @@ namespace ClearInteract {
 			'number'
 		);
 	}
+
+	function pullCentionItem( number itemId ) {
+		return .invoke(
+			"http://${.host}:${.port}/axis/services/UqfCention",
+			'pullCentionItem',
+			[ 'itemId' => itemId, 'reason' => 'Pulled' ],
+			'number'
+		);
+	}
+
+	function queueCentionSession( number itemId, string taskIdentifier, string url, string creationTime ) {
+		return .invoke(
+			"http://${.host}:${.port}/axis/services/UqfCentionSession",
+			'queueCentionSession',
+			[ 'itemId' => itemId, 'taskIdentifier' => taskIdentifier, 'url' => url, 'creationTime' => creationTime ],
+			'number'
+		);
+	}
+
+	function endCentionSession( number itemId, string reason ) {
+		return .invoke(
+			"http://${.host}:${.port}/axis/services/UqfCentionSession",
+			'endCentionSession',
+			[ 'itemId' => itemId, 'reason' => reason ],
+			'number'
+		);
+	}
+
+	function stampCentionItemStarted( number itemId, number sessionItemId, string errandId, string area, string channel, string creationTime ) {
+		return .invoke(
+			"http://${.host}:${.port}/axis/services/UqfCentionSession",
+			'stampCentionItemStarted',
+			[ 'itemId' => itemId, 'sessionItemId' => sessionItemId, 'area' => area, 'channel' => channel, 'creationTime' => creationTime ],
+			'number'
+		);
+	}
+
+	function stampCentionItemEnded( number itemId, number sessionItemId, string reason ) {
+		return .invoke(
+			"http://${.host}:${.port}/axis/services/UqfCentionSession",
+			'stampCentionItemEnded',
+			[ 'itemId' => itemId, 'sessionItemId' => sessionItemId, 'reason' => reason ],
+			'number'
+		);
+	}
 }
 
 class ClearInteractQueue implements ExternalQueue {
-	static string serverAddress = 'localhost';
-	static string openErrandURL = 'http://localhost';
+	static string SystemBaseURL = 'http://localhost';
 	
 	static function name() {
 		return 'clearinteract';
 	}
 	static function configure( array options ) {
 		if( options.keyExists('server-address') )
-			.serverAddress = options['server-address'];
+			ClearInteract.host = options['server-address'];
 		if( options.keyExists('open-errand-url') )
-			.openErrandURL = options['open-errand-url'];
+			.SystemBaseURL = options['open-errand-url'];
 	}
 	
-	static function add( object errand, object user ) {
-		number id;
-		ClearInteract.host = .serverAddress;
-		id = ClearInteract.queueCentionItem(
+	static function addErrand( object errand, object user ) {
+		number itemId = ClearInteract.queueCentionItem(
 				errand.externalID,
 				errand.targetArea.externalID,
-				"${.openErrandURL}/workflow/-/external/open/${errand.id}",
+				"${.SystemBaseURL}/workflow/-/external/open/${errand.id}",
 				'errand/' + errand.id,
 				errand.targetArea.name + '/' + errand.targetArea.id,
 				errand.service.name,
 				Date.localDate(errand.timestampArrive + Date.timezone()).format('%F %H:%M')
 			);
-		if( id > 0 ) {
+		if( itemId > 0 ) {
 			errand.setValue('queuedInExternal', true);
-			errand.setValue('externalID', id);
+			errand.setValue('externalID', itemId);
 			errand.save();
 			return true;
 		}
 		return false;
 	}
 	
-	static function remove( object errand, number type ) {
-		number id = 0;
+	static function removeErrand( object errand, number type ) {
+		number itemId;
 		string reason;
 		switch( type ) {
 			case Workflow.Errand.ACTION_ANSWER:         reason = 'Answered'; break;
@@ -104,9 +148,8 @@ class ClearInteractQueue implements ExternalQueue {
 			case Workflow.Errand.ACTION_INBOX_RETURN:   reason = 'Returned to Inbox'; break;
 			default:                                    reason = 'Pulled'; break;
 		}
-		ClearInteract.host = .serverAddress;
-		id = ClearInteract.endCentionItem(errand.externalID, reason);
-		if( id > 0 ) {
+		itemId = ClearInteract.endCentionItem(errand.externalID, reason);
+		if( itemId == errand.externalID ) {
 			errand.setValue('queuedInExternal', false);
 			errand.save();
 			return true;
@@ -114,8 +157,71 @@ class ClearInteractQueue implements ExternalQueue {
 		return false;
 	}
 	
-	static function pull( object errand ) {
-		return .remove(errand, 0);
+	static function pullErrand( object errand ) {
+		number itemId = ClearInteract.endCentionItem(errand.externalID, reason);
+		if( itemId == errand.externalID ) {
+			errand.setValue('queuedInExternal', false);
+			errand.save();
+			return true;
+		}
+		return false;
+	}
+
+	static function assignChatAgent( object chat ) {
+
+	}
+
+	static function addChat( object chat ) {
+		object user = (chat.user ? Workflow.User.load(chat.user.id) : null);
+		number sessionItemId = (user ? user.currentExternalChatSessionID : 0);
+		string creationTime = Date.localDate(chat.timestampStarted + Date.timezone()).format('%F %H:%M');
+
+		if( not user ) {
+			number itemId = -1;
+			string taskIdentifier = chat.area.externalID;
+			string url = "${.SystemBaseURL}/admin/agents/edit/-/open/chat/${chat.id}";
+			sessionItemId = ClearInteract.queueCentionSession(itemId, taskIdentifier, url, creationTime);
+		}
+
+		if( sessionItemId > 0 ) {
+			number itemId = -1;
+			string errandId = 'chat/' + chat.id;
+			string area = chat.area.name + '/' + chat.area.id;
+			string channel = 'Chat';
+			number id = ClearInteract.stampCentionItemStarted(itemId, sessionItemId, errandId, area, channel, creationTime);
+			if( id > 0 ) {
+				chat.setValue('externalSessionID', sessionItemId);
+				chat.setValue('externalID', id);
+				chat.setValue('queuedInExternal', true);
+				chat.save();
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	static function removeChat( object chat ) {
+		object user = Workflow.User.load(chat.user.id);
+		number itemId = ClearInteract.stampCentionItemEnded(chat.externalID, chat.externalSessionID, 'Ended');
+		if( itemId == chat.externalID ) {
+			array activeChats;
+
+			chat.setValue('queuedInExternal', false);
+			chat.save();
+
+			activeChats = Workflow.ChatSession.activeListByExternalID(user.currentExternalChatSessionID);
+			if( not activeChats ) {
+				number sessionItemId = ClearInteract.endCentionSession(user.currentExternalChatSessionID, 'Ended');
+				if( sessionItemId == user.currentExternalChatSessionID ) {
+					user.setValue('currentExternalChatSessionID', 0);
+					user.delayedSave();
+				}
+			}
+
+			return true;
+		}
+
+		return false;
 	}
 }
-

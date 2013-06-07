@@ -163,29 +163,26 @@ namespace Solidus {
 }
 
 class SolidusQueue implements ExternalQueue {
-	static string serverAddress;
-	static string openErrandURL;
+	static string SystemBaseURL;
 	
 	static function name() {
 		return 'solidus';
 	}
 	static function configure( array options ) {
 		if( options.keyExists('server-address') )
-			.serverAddress = options['server-address'];
+			Solidus.setDefaults(options['server-address'], 'http://tempuri.org');
 		if( options.keyExists('open-errand-url') )
-			.openErrandURL = options['open-errand-url'];
+			.SystemBaseURL = options['open-errand-url'];
 	}
 	
-	static function add( object errand, object user ) {
+	static function addErrand( object errand, object user ) {
 		object area = Workflow.Area.load(errand.targetArea.id);
 		
-		string privateData = .openErrandURL + '/workflow/-/external/open/' + errand.id;
+		string privateData = .SystemBaseURL + '/workflow/-/external/open/' + errand.id;
 		number preferredAgentID = (user ? user.solidusAgentID : 0);
 		boolean forceToPreferredAgent = (preferredAgentID ? true : false);
 		
 		object result;
-		
-		Solidus.setDefaults(.serverAddress, 'http://tempuri.org');
 		
 		Logger.info(Logger.APPLICATION_SOLIDUS, "Sending add request with preferredAgentID as ${preferredAgentID} for Workflow.Errand(${errand.id}).");
 		
@@ -203,11 +200,10 @@ class SolidusQueue implements ExternalQueue {
 		}
 	}
 	
-	static function remove( object errand, number type ) {
+	static function removeErrand( object errand, number type ) {
 		return ._remove(errand, true);
 	}
 	static function _remove( object errand, boolean cancelIfAllocated ) {
-		Solidus.setDefaults(.serverAddress, 'http://tempuri.org');
 		Logger.info(Logger.APPLICATION_SOLIDUS, "Sending cancel request for Workflow.Errand(${errand.id})");
 		if( Solidus.cancelRequest(errand.solidusOpenMediaID, cancelIfAllocated) ) {
 			Logger.info(Logger.APPLICATION_SOLIDUS, "Cancel request returned true for Workflow.Errand(${errand.id})");
@@ -221,13 +217,11 @@ class SolidusQueue implements ExternalQueue {
 		}
 	}
 	
-	static function pull( object errand ) {
+	static function pullErrand( object errand ) {
 		boolean failed = true;
 		object status;
 				
 		Logger.info(Logger.APPLICATION_SOLIDUS, "Pulling errand ${errand.id} which is registered as ${errand.solidusOpenMediaID}");
-		
-		Solidus.setDefaults(.serverAddress, 'http://tempuri.org');
 		
 		status = Solidus.getOpenMediaRequestStatus(errand.solidusOpenMediaID);
 		if( status ) {
@@ -261,6 +255,18 @@ class SolidusQueue implements ExternalQueue {
 		}
 		
 		return failed;
+	}
+
+	static function assignChatAgent( object chat ) {
+		// Tobias 2013-06-07: Do nothing here so Solidus always picks out the agent.
+	}
+
+	static function addChat( object chat ) {
+		return false;
+	}
+
+	static function removeChat( object chat ) {
+		return false;
 	}
 }
 

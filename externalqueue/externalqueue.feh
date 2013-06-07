@@ -1,9 +1,12 @@
 protocol ExternalQueue {
 	static function name();
 	static function configure( array options );
-	static function add( object errand, object user );
-	static function remove( object errand, number type );
-	static function pull( object errand);
+	static function addErrand( object errand, object user );
+	static function removeErrand( object errand, number type );
+	static function pullErrand( object errand);
+	static function assignChatAgent( object chat );
+	static function addChat( object chat );
+	static function removeChat( object chat);
 }
 
 namespace ExternalQueueInterface {
@@ -24,24 +27,46 @@ namespace ExternalQueueInterface {
 	function name() {
 		return .queue.name();
 	}
-	function configure( array options ) {
-		.queue.configure(options);
+	function setup() {
+		ExternalQueueInterface.disable();
+		if( F('clearinteract') ) {
+			ExternalQueueInterface.enable(ClearInteractQueue);
+			ClearInteractQueue.configure([
+				'server-address' => F('clearinteract.server-address'),
+				'open-errand-url' => F('clearinteract.open-errand-url')
+			]);
+		} else if( F('solidus') ) {
+			ExternalQueueInterface.enable(SolidusQueue);
+			SolidusQueue.configure([
+				'server-address' => F('solidus.server-address'),
+				'open-errand-url' => F('solidus.open-errand-url')
+			]);
+		}
 	}
 	
-	function add( object errand ) {
-		return .queue.add(errand, null);
+	function addErrand( object errand ) {
+		return .queue.addErrand(errand, null);
 	}
-	function add( object errand, object user ) {
-		return .queue.add(errand, user);
+	function addErrand( object errand, object user ) {
+		return .queue.addErrand(errand, user);
 	}
-	function remove( object errand ) {
-		return .queue.remove(errand, 0);
+	function removeErrand( object errand ) {
+		return .queue.removeErrand(errand, 0);
 	}
-	function remove( object errand, number type ) {
-		return .queue.remove(errand, type);
+	function removeErrand( object errand, number type ) {
+		return .queue.removeErrand(errand, type);
 	}
-	static function pull( object errand ) {
-		return .queue.pull(errand);
+	static function pullErrand( object errand ) {
+		return .queue.pullErrand(errand);
+	}
+	static function assignChatAgent( object chat ) {
+		return .queue.assignChatAgent(chat);
+	}
+	static function addChat( object chat ) {
+		return .queue.addChat(chat);
+	}
+	static function removeChat( object chat ) {
+		return .queue.removeChat(chat);
 	}
 }
 
