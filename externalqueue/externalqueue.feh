@@ -68,6 +68,23 @@ namespace ExternalQueueInterface {
 	static function removeChat( object chat ) {
 		return .queue.removeChat(chat);
 	}
+
+	/* legacy */
+	static function configure( array options ) {
+		.queue.configure(options);
+	}
+	static function add( object errand ) {
+		return .queue.addErrand(errand, null);
+	}
+	static function add( object errand, object user) {
+		return .queue.addErrand(errand, user);
+	}
+	static function remove( object errand, number type ) {
+		return .queue.removeErrand(errand, type);
+	}
+	static function pull( object errand ) {
+		return .queue.pullErrand(errand);
+	}
 }
 
 uses 'solidus.feh';
