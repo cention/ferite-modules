@@ -167,20 +167,49 @@ class ClearInteractQueue implements ExternalQueue {
 		return false;
 	}
 
-	static function assignChatAgent( object chat ) {
+	static function assignChatAgent() {
+		object owner = null;
 
+		array list = Workflow.User.availableForChatList([ chat.area.id ], false, 0);
+		if( list ) {
+			array possibleOwners = [];
+
+			number highestAmountOfAssignedChats = list[0]['count'];
+			list.each() using ( row ) {
+				if( row['count'] > highestAmountOfAssignedChats ) {
+					highestAmountOfAssignedChats = row['count'];
+				}
+			};
+
+			if( highestAmountOfAssignedChats > 0 ) {
+				list.each() using ( row ) {
+					if( row['count'] == highestAmountOfAssignedChats ) {
+						possibleOwners[] = row['workflow_user_id'];
+					}
+				};
+				if( possibleOwners ) {
+					number randomNumber = Math.randomNumber(0, possibleOwners.size() - 1);
+					number userID = possibleOwners[randomNumber];
+					owner = Workflow.User.load(userID);
+				}
+			}
+		}
+
+		return owner;
 	}
 
 	static function addChat( object chat ) {
 		object user = (chat.user ? Workflow.User.load(chat.user.id) : null);
 		number sessionItemId = (user ? user.currentExternalChatSessionID : 0);
 		string creationTime = Date.localDate(chat.timestampStarted + Date.timezone()).format('%F %H:%M');
+		boolean saveUser = true;
 
 		if( not user ) {
 			number itemId = -1;
 			string taskIdentifier = chat.area.externalID;
 			string url = "${.SystemBaseURL}/admin/agents/edit/-/open/chat/${chat.id}";
 			sessionItemId = ClearInteract.queueCentionSession(itemId, taskIdentifier, url, creationTime);
+			saveUser = false;
 		}
 
 		if( sessionItemId > 0 ) {
@@ -190,6 +219,9 @@ class ClearInteractQueue implements ExternalQueue {
 			string channel = 'Chat';
 			number id = ClearInteract.stampCentionItemStarted(itemId, sessionItemId, errandId, area, channel, creationTime);
 			if( id > 0 ) {
+				if( not saveUser ) {
+					chat.setValue('user', null);
+				}
 				chat.setValue('externalSessionID', sessionItemId);
 				chat.setValue('externalID', id);
 				chat.setValue('queuedInExternal', true);

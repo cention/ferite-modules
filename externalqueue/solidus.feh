@@ -277,11 +277,36 @@ class SolidusQueue implements ExternalQueue {
 		return (not failed);
 	}
 
-	static function assignChatAgent( object chat ) {
-		// Tobias 2013-06-07: Do nothing here so Solidus always picks out the agent.
+	static function assignChatAgent() {
+		object owner = null;
+
+		array list = Workflow.User.availableForChatList([ chat.area.id ], false, 0);
+		if( list ) {
+			array possibleOwners = [];
+
+			number highestAmountOfAssignedChats = list[0]['count'];
+			list.each() using ( row ) {
+				if( row['count'] > highestAmountOfAssignedChats ) {
+					highestAmountOfAssignedChats = row['count'];
+				}
+			};
+
+			list.each() using ( row ) {
+				if( row['count'] == highestAmountOfAssignedChats ) {
+					possibleOwners[] = row['workflow_user_id'];
+				}
+			};
+			if( possibleOwners ) {
+				number randomNumber = Math.randomNumber(0, possibleOwners.size() - 1);
+				number userID = possibleOwners[randomNumber];
+				owner = Workflow.User.load(userID);
+			}
+		}
+
+		return owner;
 	}
 
-	static function addChat( object chat ) {
+	static function _addChat( object chat ) {
 		object area = Workflow.Area.load(chat.area.id);
 		object user = Workflow.User.load(chat.user.id);
 		
@@ -292,7 +317,7 @@ class SolidusQueue implements ExternalQueue {
 		number preferredAgentID = user.solidusAgentID;
 		boolean forceToPreferredAgent = true;
 		array ivrInfo = [
-			'Chat' => chat.id,
+			'Area' => chat.area.name,
 			'Email' => (chat.client and chat.client.email
 				? (chat.client.email.name
 					? '{0} ({1})'.expand(chat.client.email.name, chat.client.email.emailAddress)
@@ -301,7 +326,9 @@ class SolidusQueue implements ExternalQueue {
 			'Message' => (closure {
 					object lastMessageFromClient = Workflow.ChatMessage.lastMessageFromClient(chat.id);
 					return (lastMessageFromClient and lastMessageFromClient.message
-						? (lastMessageFromClient.message.utf8Length() > 125 ? lastMessageFromClient.message.utf8Slice(125) + '...' : lastMessageFromClient.message)
+						? (lastMessageFromClient.message.utf8Length() > 125
+							? lastMessageFromClient.message.utf8Slice(125) + '...'
+							: lastMessageFromClient.message)
 						: 'No Message');
 				}).invoke()
 		];
@@ -314,6 +341,7 @@ class SolidusQueue implements ExternalQueue {
 		if( result and result.OpenMediaID > 0 ) {
 			Logger.info(Logger.APPLICATION_SOLIDUS, "Workflow.ChatSession(${chat.id}) have been successfully queued as ${result.OpenMediaID}. Queue position is ${result.QueuePosition}, EWT is ${result.EWT}, request status is ${result.RequestStatus}.");
 			if( result.RequestStatus == 'AllocatedToAgent' or result.RequestStatus == 'AgentProcessing' ) {
+				chat.setValue('user', null);
 				chat.setValue('queuedInExternal', true);
 				chat.setValue('externalID', result.OpenMediaID);
 				chat.save();
@@ -326,6 +354,36 @@ class SolidusQueue implements ExternalQueue {
 			Logger.info(Logger.APPLICATION_SOLIDUS, "Failed to add Workflow.ChatSession(${chat.id}) to queue (${result.RequestStatus}).");
 			return false;
 		}
+	}
+
+	static function addChat( object chat ) {
+		object owner = chat.user;
+		if( not ._addChat(session) ) {
+			// We need to find another possible owner
+			array activeAgents = Workflow.User.availableForChatList([ session.area.id ], false, 0);
+			array possibleOwners = [];
+			activeAgents.each() using ( row ) {
+				if( row['workflow_user_id'] != owner.id )
+					possibleOwners[] = row['workflow_user_id'];
+			};
+			if( possibleOwners ) {
+				do {
+					boolean result = false;
+					owner = Workflow.User.load(possibleOwners.pop());
+					if( user.solidusAgentID ) {
+						session.setValue('user', owner);
+						result = ._addChat(session);
+					}
+				} while( possibleOwners.size() > 0 and result == false );
+				
+				if( result and possibleOwners.size() == 0 ) {
+					owner = null;
+				}
+			} else {
+				owner = null;
+			}
+		}
+		return (owner ? true : false);
 	}
 
 	static function removeChat( object chat ) {
