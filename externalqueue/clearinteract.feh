@@ -219,7 +219,9 @@ class ClearInteractQueue implements ExternalQueue {
 			string channel = 'Chat';
 			number id = ClearInteract.stampCentionItemStarted(itemId, sessionItemId, errandId, area, channel, creationTime);
 			if( id > 0 ) {
-				if( not saveUser ) {
+				if( saveUser ) {
+					chat.setValue('status', Workflow.ChatSession.STATUS_STARTED);
+				} else {
 					chat.setValue('user', null);
 				}
 				chat.setValue('externalSessionID', sessionItemId);
