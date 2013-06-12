@@ -158,7 +158,7 @@ class ClearInteractQueue implements ExternalQueue {
 	}
 	
 	static function pullErrand( object errand ) {
-		number itemId = ClearInteract.endCentionItem(errand.externalID, reason);
+		number itemId = ClearInteract.pullCentionItem(errand.externalID);
 		if( itemId == errand.externalID ) {
 			errand.setValue('queuedInExternal', false);
 			errand.save();
