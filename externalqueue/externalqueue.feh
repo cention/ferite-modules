@@ -4,7 +4,7 @@ protocol ExternalQueue {
 	static function addErrand( object errand, object user );
 	static function removeErrand( object errand, number type );
 	static function pullErrand( object errand);
-	static function assignChatAgent( object chat );
+	static function assignChatAgent();
 	static function addChat( object chat );
 	static function removeChat( object chat);
 }
@@ -59,14 +59,31 @@ namespace ExternalQueueInterface {
 	static function pullErrand( object errand ) {
 		return .queue.pullErrand(errand);
 	}
-	static function assignChatAgent( object chat ) {
-		return .queue.assignChatAgent(chat);
+	static function assignChatAgent() {
+		return .queue.assignChatAgent();
 	}
 	static function addChat( object chat ) {
 		return .queue.addChat(chat);
 	}
 	static function removeChat( object chat ) {
 		return .queue.removeChat(chat);
+	}
+
+	/* legacy */
+	static function configure( array options ) {
+		.queue.configure(options);
+	}
+	static function add( object errand ) {
+		return .queue.addErrand(errand, null);
+	}
+	static function add( object errand, object user) {
+		return .queue.addErrand(errand, user);
+	}
+	static function remove( object errand, number type ) {
+		return .queue.removeErrand(errand, type);
+	}
+	static function pull( object errand ) {
+		return .queue.pullErrand(errand);
 	}
 }
 
