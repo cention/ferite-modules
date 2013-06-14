@@ -189,7 +189,7 @@ class SolidusQueue implements ExternalQueue {
 	static function addErrand( object errand, object user ) {
 		object area = Workflow.Area.load(errand.targetArea.id);
 		
-		string privateData = .SystemBaseURL + '/workflow/-/external/open/' + errand.id;
+		string privateData = .SystemBaseURL + '/solidus/login/-/errand/' + errand.id;
 		number preferredAgentID = (user ? user.solidusAgentID : 0);
 		boolean forceToPreferredAgent = (preferredAgentID ? true : false);
 		array ivrInfo = [
@@ -310,10 +310,10 @@ class SolidusQueue implements ExternalQueue {
 		object area = Workflow.Area.load(chat.area.id);
 		object user = Workflow.User.load(chat.user.id);
 		
-		array activeChats = Workflow.ChatSession.activeList(user.systemGroup, Workflow.User.idListForUserFromCache(user.id), [ user. id ]);
+		array activeChats = Workflow.ChatSession.activeList(user.systemGroup, Workflow.User.idListForUserFromCache(user.id), [ user.id ]);
 		boolean hasActiveChat = (activeChats ? true : false);
 
-		string privateData = (hasActiveChat ? '' : .SystemBaseURL + '/admin/agents/edit/-/open/chat/' + chat.id);
+		string privateData = (hasActiveChat ? '' : .SystemBaseURL + '/solidus/login/-/chat/' + chat.id);
 		number preferredAgentID = user.solidusAgentID;
 		boolean forceToPreferredAgent = true;
 		array ivrInfo = [
