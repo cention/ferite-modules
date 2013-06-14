@@ -167,10 +167,18 @@ class ClearInteractQueue implements ExternalQueue {
 		return false;
 	}
 
+	static function chatAgentsAvailable( object area ) {
+		/* Tobias 2013-06-14: When using the system with Clear Interact we always
+		                      say that there are agents available because CI puts
+		                      the chats in a queue and then the customer waits
+		                      until there is a free agent. */
+		return 1;
+	}
+
 	static function assignChatAgent( object area ) {
 		object owner = null;
 
-		array list = Workflow.User.availableForChatList([ area.id ], false, 0);
+		array list = Workflow.User.availableForChatList([ area_id ]);
 		if( list ) {
 			array possibleOwners = [];
 

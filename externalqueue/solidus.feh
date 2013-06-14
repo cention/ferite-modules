@@ -277,6 +277,13 @@ class SolidusQueue implements ExternalQueue {
 		return (not failed);
 	}
 
+	static function chatAgentsAvailable( object area ) {
+		array list = Workflow.User.availableForChatList([ area.id ], false, 0);
+		if( list )
+			return list.size();
+		return 0;
+	}
+
 	static function assignChatAgent( object area ) {
 		object owner = null;
 
