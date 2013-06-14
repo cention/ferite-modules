@@ -99,8 +99,12 @@ namespace Solidus {
 			parameters['TenantID'] = -1;
 
 			ivrInfo.eachWithIndex() using ( value, index ) {
+				string data = '' + value;
+				if( data.utf8Length() > 20 ) {
+					data = data.utf8Slice(17) + '...';
+				}
 				parameters['IVRInfo'][index].Label = ivrInfo.getName(index);
-				parameters['IVRInfo'][index].Data = '' + value;
+				parameters['IVRInfo'][index].Data = data;
 			};
 
 			result = .sendRequest(

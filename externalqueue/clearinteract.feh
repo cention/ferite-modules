@@ -88,7 +88,7 @@ namespace ClearInteract {
 		return .invoke(
 			"http://${.host}:${.port}/axis/services/UqfCentionSession",
 			'stampCentionItemStarted',
-			[ 'itemId' => itemId, 'sessionItemId' => sessionItemId, 'area' => area, 'channel' => channel, 'creationTime' => creationTime ],
+			[ 'itemId' => itemId, 'sessionItemId' => sessionItemId, 'errandId' => errandId, 'area' => area, 'channel' => channel, 'creationTime' => creationTime ],
 			'number'
 		);
 	}
@@ -252,7 +252,7 @@ class ClearInteractQueue implements ExternalQueue {
 			chat.setValue('queuedInExternal', false);
 			chat.save();
 
-			activeChats = Workflow.ChatSession.activeListByExternalID(user.currentExternalChatSessionID);
+			activeChats = Workflow.ChatSession.activeListByExternalSessionID(user.currentExternalChatSessionID);
 			if( not activeChats ) {
 				number sessionItemId = ClearInteract.endCentionSession(user.currentExternalChatSessionID, 'Ended');
 				if( sessionItemId == user.currentExternalChatSessionID ) {
