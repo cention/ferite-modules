@@ -58,7 +58,7 @@ namespace modifies Array {
 }
 namespace Twitter {
 	class TwitterMain {	
-		static string mentionURI = 'https://api.twitter.com/1/statuses/mentions.json';  
+		static string mentionURI = 'https://api.twitter.com/1.1/statuses/mentions_timeline.json';  
 		constructor(){
 		}
 		function buildBaseString(string baseURI, array params, string method){
