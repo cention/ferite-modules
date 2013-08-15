@@ -7,14 +7,14 @@ class AddRequestResult {
 	number OpenMediaID;
 	number QueuePosition;
 	number RequestStatus;
-	
+
 	[rpc_import 'EWT:number', 'OpenMediaID:number', 'QueuePosition:number', 'RequestStatus:string'];
 }
 
 class GetOpenMediaRequestStatusByIDResult {
 	string TimeStamp;
 	array OpenMediaRequests;
-	
+
 	[rpc_import 'TimeStamp:string', 'OpenMediaRequests:array<OpenMediaRequest>'];
 }
 
@@ -25,57 +25,57 @@ class OpenMediaRequest {
 	string Status;
 	number TenantID;
 	string TimeStamp;
-	
+
 	[rpc_import 'AgentID:number', 'ID:number' , 'LogonID:number' , 'Status:string' , 'TenantID:number' , 'TimeStamp:string'];
 }
 
 class IVRInformation {
 	string Data;
 	string Label;
-	
+
 	constructor( string label, string data ) {
 		.Label = label;
 		.Data = data;
 	}
-	
+
 	[rpc_export Data, Label];
 }
 
 namespace Solidus {
 	static string serverAddress;
 	static string soapActionURL;
-	
+
 	function setDefaults( string serverAddress, string soapActionURL ) {
 		.serverAddress = serverAddress;
 		.soapActionURL = soapActionURL;
 	}
-	
+
 	function sendRequest( string url, string action, string f, array parameters, string result, string resultName ) {
 		array body = [ "${f}Response" => [ "${resultName}" => result ] ];
 		string message;
-		
+
 		message += "<?xml version='1.0' ?>";
 		message += '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"';
 		message += ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"';
 		message += ' xmlns:xsd="http://www.w3.org/2001/XMLSchema">';
 		message += '<soap:Body>';
 		message += "<${f} xmlns=\"${.soapActionURL}/\">";
-		
+
 		if( f != 'GetOpenMediaRequestStatusByID' )
 			message += '<request>';
-		
+
 		parameters.eachWithIndex() using ( value, index ) {
 			string name = parameters.getName(index);
 			message += SOAP.toSOAP( name, value, (f != 'GetOpenMediaRequestStatusByID' ? 'http://schemas.datacontract.org/2004/07/Solidus.OpenMedia.Contracts.DataContracts' : '') );
 		};
-		
+
 		if( f != 'GetOpenMediaRequestStatusByID' )
 			message += '</request>';
-		
+
 		message += "</${f}>";
 		message += '</soap:Body>';
 		message += '</soap:Envelope>';
-		
+
 		return SOAP.RPC.sendRequest( url, action, message, body );
 	}
 	function addRequest( number serviceGroupID, string privateData ) {
@@ -84,7 +84,7 @@ namespace Solidus {
 	function addRequest( number serviceGroupID, number preferredAgentID, boolean forceToPreferredAgent, string privateData ) {
 		return .addRequest(serviceGroupID, preferredAgentID, forceToPreferredAgent, privateData, []);
 	}
-	function addRequest( number serviceGroupID, number preferredAgentID, boolean forceToPreferredAgent, string privateData, array ivrInfo ) {	
+	function addRequest( number serviceGroupID, number preferredAgentID, boolean forceToPreferredAgent, string privateData, array ivrInfo ) {
 		object result;
 
 		monitor {
@@ -118,7 +118,7 @@ namespace Solidus {
 		} handle {
 			result = null;
 		}
-		
+
 		return result;
 	}
 
@@ -128,16 +128,16 @@ namespace Solidus {
 	function cancelRequest( number openMediaID, boolean cancelIfAllocated ) {
 		return .cancelRequest(openMediaID, cancelIfAllocated, false);
 	}
-	function cancelRequest( number openMediaID, boolean cancelIfAllocated, boolean doNotReport ) {	
+	function cancelRequest( number openMediaID, boolean cancelIfAllocated, boolean doNotReport ) {
 		boolean result;
-		
+
 		monitor {
 			array parameters;
-			
+
 			parameters['CancelIfAllocated'] = cancelIfAllocated;
 			parameters['DoNotReport'] = doNotReport;
 			parameters['OpenMediaID'] = openMediaID;
-			
+
 			result = .sendRequest(
 				.serverAddress + '/OpenMediaService',
 				.soapActionURL + '/IOpenMediaService/CancelRequest',
@@ -149,7 +149,7 @@ namespace Solidus {
 		} handle {
 			result = false;
 		}
-		
+
 		return result;
 	}
 
@@ -158,9 +158,9 @@ namespace Solidus {
 
 		monitor {
 			array parameters;
-		
+
 			parameters['openMediaID'] = openMediaID;
-			
+
 			result = .sendRequest(
 				.serverAddress + '/OpenMediaService',
 				.soapActionURL + '/IOpenMediaService/GetOpenMediaRequestStatusByID',
@@ -172,14 +172,14 @@ namespace Solidus {
 		} handle {
 			result = null;
 		}
-	
+
 		return result;
 	}
 }
 
 class SolidusQueue implements ExternalQueue {
 	static string SystemBaseURL;
-	
+
 	static function name() {
 		return 'solidus';
 	}
@@ -189,10 +189,10 @@ class SolidusQueue implements ExternalQueue {
 		if( options.keyExists('open-errand-url') )
 			.SystemBaseURL = options['open-errand-url'];
 	}
-	
+
 	static function addErrand( object errand, object user ) {
 		object area = Workflow.Area.load(errand.targetArea.id);
-		
+
 		string privateData = .SystemBaseURL + '/solidus/login/-/errand/' + errand.id;
 		number preferredAgentID = (user ? user.solidusAgentID : 0);
 		boolean forceToPreferredAgent = (preferredAgentID ? true : false);
@@ -205,11 +205,11 @@ class SolidusQueue implements ExternalQueue {
 				: 'No Sender'),
 			'Subject' => (errand.message ? errand.message.subject : 'No Subject')
 		];
-		
+
 		object result;
-		
+
 		Logger.info(Logger.APPLICATION_SOLIDUS, "Sending add request with preferredAgentID as ${preferredAgentID} for Workflow.Errand(${errand.id}).");
-		
+
 		result = Solidus.addRequest(area.solidusServiceGroupID, preferredAgentID, forceToPreferredAgent, privateData, ivrInfo);
 		if( result and result.OpenMediaID > 0 ) {
 			Logger.info(Logger.APPLICATION_SOLIDUS, "Workflow.Errand(${errand.id}) have been successfully queued as ${result.OpenMediaID}. Queue position is ${result.QueuePosition}, EWT is ${result.EWT}.");
@@ -223,7 +223,7 @@ class SolidusQueue implements ExternalQueue {
 			return false;
 		}
 	}
-	
+
 	static function removeErrand( object errand, number type ) {
 		return ._remove(errand, true);
 	}
@@ -240,13 +240,13 @@ class SolidusQueue implements ExternalQueue {
 			return false;
 		}
 	}
-	
+
 	static function pullErrand( object errand ) {
 		boolean failed = true;
 		object status;
-				
+
 		Logger.info(Logger.APPLICATION_SOLIDUS, "Pulling errand ${errand.id} which is registered as ${errand.solidusOpenMediaID}");
-		
+
 		status = Solidus.getOpenMediaRequestStatus(errand.solidusOpenMediaID);
 		if( status ) {
 			if( status.OpenMediaRequests )  {
@@ -277,7 +277,7 @@ class SolidusQueue implements ExternalQueue {
 			errand.setValue('solidusOpenMediaID', 0);
 			errand.save();
 		}
-		
+
 		return (not failed);
 	}
 
@@ -320,8 +320,8 @@ class SolidusQueue implements ExternalQueue {
 	static function _addChat( object chat ) {
 		object area = Workflow.Area.load(chat.area.id);
 		object user = Workflow.User.load(chat.user.id);
-		
-		array activeChats = Workflow.ChatSession.activeList(user.systemGroup, Workflow.User.idListForUserFromCache(user.id), [ user.id ]);
+
+		array activeChats = Workflow.ChatSession.activeList(user.systemGroup, Workflow.Area.idListByArrayForUser(Workflow.SystemGroup.areas(user.systemGroup), user.id), [ user.id ]);
 		boolean hasActiveChat = (activeChats ? true : false);
 
 		string privateData = (hasActiveChat ? '' : .SystemBaseURL + '/solidus/login/-/chat/' + chat.id);
@@ -343,20 +343,20 @@ class SolidusQueue implements ExternalQueue {
 						: 'No Message');
 				}).invoke()
 		];
-		
+
 		object result;
-		
+
 		Logger.info(Logger.APPLICATION_SOLIDUS, "Sending add request with preferredAgentID as ${preferredAgentID} for Workflow.ChatSession(${chat.id}).");
-		
+
 		result = Solidus.addRequest(area.solidusServiceGroupID, preferredAgentID, forceToPreferredAgent, privateData, ivrInfo);
 		if( result and result.OpenMediaID > 0 ) {
 			Logger.info(Logger.APPLICATION_SOLIDUS, "Workflow.ChatSession(${chat.id}) have been successfully queued as ${result.OpenMediaID}. Queue position is ${result.QueuePosition}, EWT is ${result.EWT}, request status is ${result.RequestStatus}.");
-			if( result.RequestStatus == 'AllocatedToAgent' or result.RequestStatus == 'AgentProcessing' ) {
+			if( result.RequestStatus == 'Success' ) {
 				chat.setValue('user', null);
 				chat.setValue('queuedInExternal', true);
 				chat.setValue('externalID', result.OpenMediaID);
 				chat.save();
-				return true;				
+				return true;
 			} else {
 				Solidus.cancelRequest(result.OpenMediaID, true, true);
 				return false;
@@ -369,9 +369,9 @@ class SolidusQueue implements ExternalQueue {
 
 	static function addChat( object chat ) {
 		object owner = chat.user;
-		if( not ._addChat(session) ) {
+		if( not ._addChat(chat) ) {
 			// We need to find another possible owner
-			array activeAgents = Workflow.User.availableForChatList([ session.area.id ], false, 0);
+			array activeAgents = Workflow.User.availableForChatList([ chat.area.id ], false, 0);
 			array possibleOwners = [];
 			activeAgents.each() using ( row ) {
 				if( row['workflow_user_id'] != owner.id )
@@ -381,13 +381,13 @@ class SolidusQueue implements ExternalQueue {
 				do {
 					boolean result = false;
 					owner = Workflow.User.load(possibleOwners.pop());
-					if( user.solidusAgentID ) {
-						session.setValue('user', owner);
-						result = ._addChat(session);
+					if( owner.solidusAgentID ) {
+						chat.setValue('user', owner);
+						result = ._addChat(chat);
 					}
 				} while( possibleOwners.size() > 0 and result == false );
-				
-				if( result and possibleOwners.size() == 0 ) {
+
+				if( result == false ) {
 					owner = null;
 				}
 			} else {
