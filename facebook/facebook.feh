@@ -45,18 +45,20 @@ namespace Facebook {
 			curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
 			curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
 			
-			if( curl.exec() ) {
-				string content = curl.getContent();
-				
-				monitor {
-					// Uncomment the below to print debug output with the received content.
-					//Console.println('Content: ' + content);
-					// data is defined at the top of the run function
-					data = JSON.parse(content);
-				} handle {
-					raise new Error("Error when parsing response: ${content}");
-				}
-			} else {
+			monitor {
+			    if( curl.exec() ) {
+				    string content = curl.getContent();
+				    
+				    monitor {
+					    // data is defined at the top of the run function
+					    //Console.println('Content: ' + content);
+					    data = JSON.parse(content);
+				    } handle {
+					    raise new Error("Error when parsing response: ${content}");
+				    }
+			    }
+			}
+			handle {
 				raise new Error("Error when connecting to: ${url}");
 			}
 			
@@ -121,19 +123,21 @@ namespace Facebook {
 			curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
 			curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
 			
-			if( curl.exec() ) {
+			monitor {
+			    if( curl.exec() ) {
 				string content = curl.getContent();
 				
 				monitor {
-					// Uncomment the below to print debug output with the received content.
-					//Console.println('Content: ' + content);
 					// data is defined at the top of the run function
+					//Console.println('Content: ' + content);
 					data = JSON.parse(content);
 				} handle {
 					raise new Error("Error when parsing response: ${content}");
 				}
-			} else {
-				raise new Error("Error when connecting to: ${url}");
+			    } 
+			}
+			handle {
+			    raise new Error("Error when connecting to: ${url}");
 			}
 			
 			return data;
