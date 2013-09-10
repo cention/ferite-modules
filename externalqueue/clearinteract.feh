@@ -178,7 +178,7 @@ class ClearInteractQueue implements ExternalQueue {
 	static function assignChatAgent( object area ) {
 		object owner = null;
 
-		array list = Workflow.User.availableForChatList([ area_id ]);
+		array list = Workflow.User.availableForChatList([ area.id ]);
 		if( list ) {
 			array possibleOwners = [];
 
