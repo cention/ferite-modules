@@ -215,7 +215,7 @@ class ClearInteractQueue implements ExternalQueue {
 		if( not user ) {
 			number itemId = -1;
 			string taskIdentifier = chat.area.externalID;
-			string url = "${.SystemBaseURL}/admin/agents/edit/-/open/chat/${chat.id}";
+			string url = "${.SystemBaseURL}/chat/answer/-/open/${chat.id}";
 			sessionItemId = ClearInteract.queueCentionSession(itemId, taskIdentifier, url, creationTime);
 			saveUser = false;
 		}
