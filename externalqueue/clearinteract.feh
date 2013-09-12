@@ -120,7 +120,7 @@ class ClearInteractQueue implements ExternalQueue {
 		number itemId = ClearInteract.queueCentionItem(
 				errand.externalID,
 				errand.targetArea.externalID,
-				"${.SystemBaseURL}/workflow/-/external/open/${errand.id}",
+				"${.SystemBaseURL}/workflow/-/external/open/${errand.id}/update-id/[at_agent_id]",
 				'errand/' + errand.id,
 				errand.targetArea.name + '/' + errand.targetArea.id,
 				errand.service.name,
@@ -159,7 +159,7 @@ class ClearInteractQueue implements ExternalQueue {
 	
 	static function pullErrand( object errand ) {
 		number itemId = ClearInteract.pullCentionItem(errand.externalID);
-		if( itemId == errand.externalID ) {
+		if( itemId == errand.externalID or itemId == -1 /* -1 = errand not in CI queue */ ) {
 			errand.setValue('queuedInExternal', false);
 			errand.save();
 			return true;
@@ -215,7 +215,7 @@ class ClearInteractQueue implements ExternalQueue {
 		if( not user ) {
 			number itemId = -1;
 			string taskIdentifier = chat.area.externalID;
-			string url = "${.SystemBaseURL}/chat/answer/-/open/${chat.id}";
+			string url = "${.SystemBaseURL}/chat/answer/-/open/${chat.id}/allow-deactivate/update-id/[at_agent_id]";
 			sessionItemId = ClearInteract.queueCentionSession(itemId, taskIdentifier, url, creationTime);
 			saveUser = false;
 		}
