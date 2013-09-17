@@ -57,36 +57,36 @@ namespace ExternalQueueInterface {
 	function removeErrand( object errand, number type ) {
 		return .queue.removeErrand(errand, type);
 	}
-	static function pullErrand( object errand ) {
+	function pullErrand( object errand ) {
 		return .queue.pullErrand(errand);
 	}
-	static function chatAgentsAvailable( object area ) {
+	function chatAgentsAvailable( object area ) {
 		return .queue.chatAgentsAvailable(area);
 	}
-	static function assignChatAgent( object area ) {
+	function assignChatAgent( object area ) {
 		return .queue.assignChatAgent(area);
 	}
-	static function addChat( object chat ) {
+	function addChat( object chat ) {
 		return .queue.addChat(chat);
 	}
-	static function removeChat( object chat ) {
+	function removeChat( object chat ) {
 		return .queue.removeChat(chat);
 	}
 
 	/* legacy */
-	static function configure( array options ) {
+	function configure( array options ) {
 		.queue.configure(options);
 	}
-	static function add( object errand ) {
+	function add( object errand ) {
 		return .queue.addErrand(errand, null);
 	}
-	static function add( object errand, object user) {
+	function add( object errand, object user) {
 		return .queue.addErrand(errand, user);
 	}
-	static function remove( object errand, number type ) {
+	function remove( object errand, number type ) {
 		return .queue.removeErrand(errand, type);
 	}
-	static function pull( object errand ) {
+	function pull( object errand ) {
 		return .queue.pullErrand(errand);
 	}
 }
