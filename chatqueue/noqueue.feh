@@ -1,0 +1,46 @@
+class NoChatQueue implements ChatQueue {
+	function isOpen( object area ) {
+		array list = Workflow.User.availableForChatList([ area.id ]);
+		return (list ? true : false);
+	}
+	function addChat( object chat ) {
+		array list = Workflow.User.availableForChatList([ chat.area.id ]);
+		if( list ) {
+			object assignedAgent = null;
+			array possibleAgents= [];
+
+			number lowestAmountOfAssignedChats = list[0]['count'];
+			list.each() using ( row ) {
+				if( row['count'] < lowestAmountOfAssignedChats ) {
+					lowestAmountOfAssignedChats = row['count'];
+				}
+			};
+			list.each() using ( row ) {
+				if( row['count'] == lowestAmountOfAssignedChats ) {
+					possibleAgents[] = row['workflow_user_id'];
+				}
+			};
+			if( possibleAgents ) {
+				assignedAgent = Workflow.User.load(possibleAgents[Math.randomNumber(0, possibleAgents.size() - 1)]);
+			}
+
+			if( assignedAgent ) {			
+				chat.setValue('status', Workflow.ChatSession.STATUS_STARTED);
+				chat.setValue('user', assignedAgent);
+				chat.save();
+
+				return true;
+			}
+		}
+
+		chat.setValue('status', Workflow.ChatSession.STATUS_FAILED_TO_ASSIGN_AGENT);
+		chat.setValue('active', false);
+		chat.save();
+
+		return false;
+	}
+	function endChat( object chat ) return true;
+	function hangUpChat( object chat ) return true;
+	function acceptChat( object user ) return true;
+	function advanceQueue();
+}

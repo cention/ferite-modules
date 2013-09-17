@@ -1,0 +1,148 @@
+uses '/cention/etc/webframework-config.feh';
+uses 'webframework/webframework';
+uses 'ObjRunSrv';
+uses 'ObjRunObjectStub';
+uses 'workflow';
+
+protocol ChatQueue {
+	function isOpen( object area );
+	function addChat( object chat );
+	function endChat( object chat );
+	function hangUpChat( object chat );
+	function advanceQueue();
+}
+
+uses 'chatqueue/solidus';
+uses 'chatqueue/clearinteract';
+uses 'chatqueue/cention';
+uses 'chatqueue/noqueue';
+
+namespace ChatQueueInterface {
+	function _handleResponse( array response ) {
+		object content = JSON.parse(response['Content']);
+		return content.result;
+	}
+	function _port( number systemgroup ) {
+		return 55500 + systemgroup;
+	}
+	function _sendRequest( string host, number port, string f, array parameters ) {
+		array response;
+		
+		string previousHost = JSON.RPC.host;
+		number previousPort = JSON.RPC.port;
+		string previousURL = JSON.RPC.url;
+		
+		JSON.RPC.setDefaults(host, port, '/chat/queue');
+		JSON.RPC.reconnect(host, port);
+		
+		response = JSON.RPC.invoke(f, parameters);
+
+		JSON.RPC.setDefaults(previousHost, previousPort, previousURL);
+		JSON.RPC.reconnect(previousHost, previousPort);
+
+		return ._handleResponse(response);
+	}
+
+	function isOpen( object area ) return ._sendRequest('localhost', ._port(Workflow.SystemGroup.minimalByAreaID(area.id).id), 'isOpen', [ 'area' => area.id ]);
+	function addChat( object chat ) return ._sendRequest('localhost', ._port(chat.systemGroup), 'addChat', [ 'chat' => chat.id ]);
+	function endChat( object chat ) return ._sendRequest('localhost', ._port(chat.systemGroup), 'endChat', [ 'chat' => chat.id ]);
+	function hangUpChat( object chat ) return ._sendRequest('localhost', ._port(chat.systemGroup), 'hangUpChat', [ 'chat' => chat.id ]);
+	function acceptChat( object user ) return ._sendRequest('localhost', ._port(chat.systemGroup), 'acceptChat', [ 'user' => user.id ]);
+}
+
+class ChatQueueServer {
+	object queue;
+	object server;
+	number port;
+	boolean running;
+
+	function constructor( number systemgroup ) {
+		Feature.clearCache();
+		Feature.setGlobalContext('system-group:' + systemgroup);
+
+		.port = 55500 + systemgroup;
+
+		     if( F('solidus') )       .queue = new SolidusChatQueue();
+		else if( F('clearinteract') ) .queue = new ClearInteractChatQueue();
+		else if( F('chat.queue') )    .queue = new CentionChatQueue();
+		else                          .queue = new NoChatQueue();
+	}
+
+	function handleRequest( object client, array _request ) {
+		object content = JSON.parse(_request['Content']);
+		array _response = [ 'error' => null ];
+		switch( content.method ) {
+			case 'isOpen':     _response['result'] = .queue.isOpen(Workflow.Area.load(content.params.area)); break;
+			case 'addChat':    _response['result'] = .queue.addChat(Workflow.ChatSession.load(content.params.chat)); break;
+			case 'endChat':    _response['result'] = .queue.endChat(Workflow.ChatSession.load(content.params.chat)); break;
+			case 'hangUpChat': _response['result'] = .queue.hangUpChat(Workflow.ChatSession.load(content.params.chat)); break;
+			case 'acceptChat': _response['result'] = .queue.acceptChat(Workflow.User.load(content.params.user)); break;
+			default: _response['error'] = [ 'code' => -1000, 'message' => 'No such method.' ];
+		}
+		.sendResponse(client, JSON.valueToJSON(_response));
+	}
+
+	function run() {
+		.server = Network.TCP.bind(Network.ANY4, .port, Network.AF_AUTO);
+		if( .server ) {
+			Posix.registerSigHandler(Posix.SIGINT, 'handleSignalForChatQueueServer', self);
+			.server.listen(10);
+			.running = true;
+			do {
+				object client = .server.accept();
+				if( client ) {
+					array _request = .readRequest(client);
+					Console.println('' + _request);
+					.handleRequest(client, _request);
+				}
+			} while( .running );
+		}
+	}
+
+	function response( string content ) {
+		array output;
+		output[] = "HTTP/1.0 200 Ok";
+		output[] = "Content-Type: text/json; charset=UTF-8";
+		output[] = "Content-Length: ${content.length()}";
+		output[] = "";
+		output[] = content;
+		return output.join("\r\n");
+	}
+	function sendResponse( object o, string content ) {
+		o.write(.response(content));
+		o.flush();
+	}
+	function readRequest( object o ) {
+		array headers = [];
+		string content = '';
+		boolean keepReading = true;
+		boolean seenLeadingLine = false;
+		
+		while( keepReading and not o.eos() ) {
+			string line = o.readln();
+			object match = null;
+
+			line = line.trim("\r\n");
+			if( line and (match = Regexp.match("POST (.*?) HTTP/1\.[10]", line)) ) {
+				headers['Request-URL'] = match.capture(0);
+				seenLeadingLine = true;
+			}
+			else if( line and (match = Regexp.match( "([^:]+): (.*)", line )) ) {
+				headers[match.capture(0)] = match.capture(1);
+			}
+			else if( not line and seenLeadingLine ) {
+				if( headers.keyExists('Content-Length') ) {
+					content = o.read( headers['Content-Length'].toNumber() ).trim("\r\n");
+				}
+				headers['Content'] = content;
+				keepReading = false;
+			}
+		}
+		return headers;
+	}
+}
+
+function handleSignalForChatQueueServer( number signal, object server ) {
+	server.running = false;
+	server.server.close();
+}
