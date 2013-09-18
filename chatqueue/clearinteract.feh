@@ -52,6 +52,7 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 		number itemID;
 
 		resource = new Workflow.ClearInteractAgentResource();
+		resource.setValue('systemgroup', .currentSystemGroup());
 		resource.save();
 
 		itemID = ._requestResource(area, resource);
@@ -94,7 +95,7 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 		return true;
 	}
 	function _closeSessions() {
-		array list = Workflow.User.withExternalChatSessionWithoutAssignedChat();
+		array list = Workflow.User.withExternalChatSessionWithoutAssignedChat(.currentSystemGroup());
 		list.each() using ( row ) {
 			object user = Workflow.User.load(row['workflow_user_id']);
 			if( ClearInteract.endCentionSession(user.currentExternalChatSessionID, 'Ended') ) {
@@ -103,6 +104,10 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 				user.save();
 			}
 		};
+	}
+
+	function constructor {
+		ClearInteract.host = F('clearinteract.server-address');
 	}
 
 	function isOpen( object area ) {
@@ -117,10 +122,17 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 			._startChat(chat, assignedAgent);
 			return true;
 		} else {
-			if( ._allocateAgent(area) ) {
+			object unassignedResource = Workflow.ClearInteractAgentResource.currentUnassigned(.currentSystemGroup());
+			if( unassignedResource ) {
 				chat.setValue('status', Workflow.ChatSession.STATUS_WAITING_ON_AGENT);
 				chat.save();
 				return true;
+			} else {
+				if( ._allocateAgent(chat.area) ) {
+					chat.setValue('status', Workflow.ChatSession.STATUS_WAITING_ON_AGENT);
+					chat.save();
+					return true;
+				}
 			}
 		}
 
@@ -150,7 +162,7 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 		availableUserIDs.each() using ( userID ) {
 			object user = Workflow.User.load(userID['workflow_user_id']);
 			array areaIDs = Workflow.Area.idListByArrayForUser(allAreaIDs, user.id);
-			while( user.canBeAssignedMoreChat() ) {
+			while( user.canBeAssignedMoreChat(.currentSystemGroup(), areaIDs) ) {
 				nextChat = Workflow.ChatSession.nextUnassignedChat(areaIDs);
 				if( nextChat ) {
 					._startChat(nextChat, user);
@@ -160,7 +172,7 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 			}
 		};
 
-		unassignedResource = Workflow.ClearInteractAgentResource.currentUnassigned();
+		unassignedResource = Workflow.ClearInteractAgentResource.currentUnassigned(.currentSystemGroup());
 		nextChat = Workflow.ChatSession.nextUnassignedChat(allAreaIDs);
 		if( nextChat ) {
 			// At this point we know that we have at least one unassigned chat.
@@ -176,6 +188,7 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 
 			if( not unassignedResource )
 				._allocateAgent(nextChat.area);
+
 			return false;
 		}
 
