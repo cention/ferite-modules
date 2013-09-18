@@ -1,4 +1,4 @@
-class NoChatQueue implements ChatQueue {
+class NoChatQueue extends ChatQueue implements ChatQueueProtocol {
 	function isOpen( object area ) {
 		array list = Workflow.User.availableForChatList([ area.id ]);
 		return (list ? true : false);

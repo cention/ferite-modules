@@ -1,6 +1,6 @@
 uses 'clearinteract';
 
-class ClearInteractChatQueue implements ChatQueue {
+class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 	function _assignAgent( object area ) {
 		object assignedAgent = null;
 
@@ -20,7 +20,7 @@ class ClearInteractChatQueue implements ChatQueue {
 					possibleAgents[] = row['workflow_user_id'];
 				}
 			};
-			if( possibleOwners ) {
+			if( possibleAgents ) {
 				number randomNumber = Math.randomNumber(0, possibleAgents.size() - 1);
 				number id = possibleAgents[randomNumber];
 				assignedAgent = Workflow.User.load(id);

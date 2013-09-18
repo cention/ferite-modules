@@ -1,4 +1,4 @@
-class SolidusChatQueue implements ChatQueue {
+class SolidusChatQueue extends ChatQueue implements ChatQueueProtocol {
 	function isOpen( object area ) return false;
 	function addChat( object chat ) return false;
 	function endChat( object chat ) return false;

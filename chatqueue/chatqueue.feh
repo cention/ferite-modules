@@ -4,12 +4,18 @@ uses 'ObjRunSrv';
 uses 'ObjRunObjectStub';
 uses 'workflow';
 
-protocol ChatQueue {
+protocol ChatQueueProtocol {
 	function isOpen( object area );
 	function addChat( object chat );
 	function endChat( object chat );
 	function hangUpChat( object chat );
-	function advanceQueue();
+	function advanceQueue( number systemgroup );
+}
+
+abstract class ChatQueue {
+	number systemgroup;
+	function setSystemGroup( number systemgroup ) .systemgroup = systemgroup;
+	function currentSystemGroup() return .systemgroup;
 }
 
 uses 'chatqueue/solidus';
@@ -47,7 +53,7 @@ namespace ChatQueueInterface {
 	function addChat( object chat ) return ._sendRequest('localhost', ._port(chat.systemGroup), 'addChat', [ 'chat' => chat.id ]);
 	function endChat( object chat ) return ._sendRequest('localhost', ._port(chat.systemGroup), 'endChat', [ 'chat' => chat.id ]);
 	function hangUpChat( object chat ) return ._sendRequest('localhost', ._port(chat.systemGroup), 'hangUpChat', [ 'chat' => chat.id ]);
-	function acceptChat( object user ) return ._sendRequest('localhost', ._port(chat.systemGroup), 'acceptChat', [ 'user' => user.id ]);
+	function advanceQueue( number systemgroup ) return ._sendRequest('localhost', ._port(systemgroup), 'advanceQueue', []);
 }
 
 class ChatQueueServer {
@@ -66,17 +72,20 @@ class ChatQueueServer {
 		else if( F('clearinteract') ) .queue = new ClearInteractChatQueue();
 		else if( F('chat.queue') )    .queue = new CentionChatQueue();
 		else                          .queue = new NoChatQueue();
+
+		.queue.setSystemGroup(systemgroup);
 	}
 
 	function handleRequest( object client, array _request ) {
 		object content = JSON.parse(_request['Content']);
 		array _response = [ 'error' => null ];
 		switch( content.method ) {
-			case 'isOpen':     _response['result'] = .queue.isOpen(Workflow.Area.load(content.params.area)); break;
-			case 'addChat':    _response['result'] = .queue.addChat(Workflow.ChatSession.load(content.params.chat)); break;
-			case 'endChat':    _response['result'] = .queue.endChat(Workflow.ChatSession.load(content.params.chat)); break;
-			case 'hangUpChat': _response['result'] = .queue.hangUpChat(Workflow.ChatSession.load(content.params.chat)); break;
-			case 'acceptChat': _response['result'] = .queue.acceptChat(Workflow.User.load(content.params.user)); break;
+			case 'isOpen':       _response['result'] = .queue.isOpen(Workflow.Area.load(content.params.area)); break;
+			case 'addChat':      _response['result'] = .queue.addChat(Workflow.ChatSession.load(content.params.chat)); break;
+			case 'endChat':      _response['result'] = .queue.endChat(Workflow.ChatSession.load(content.params.chat)); break;
+			case 'hangUpChat':   _response['result'] = .queue.hangUpChat(Workflow.ChatSession.load(content.params.chat)); break;
+			case 'acceptChat':   _response['result'] = .queue.acceptChat(Workflow.User.load(content.params.user)); break;
+			case 'advanceQueue': _response['result'] = .queue.advanceQueue(); break;
 			default: _response['error'] = [ 'code' => -1000, 'message' => 'No such method.' ];
 		}
 		.sendResponse(client, JSON.valueToJSON(_response));
@@ -85,7 +94,6 @@ class ChatQueueServer {
 	function run() {
 		.server = Network.TCP.bind(Network.ANY4, .port, Network.AF_AUTO);
 		if( .server ) {
-			Posix.registerSigHandler(Posix.SIGINT, 'handleSignalForChatQueueServer', self);
 			.server.listen(10);
 			.running = true;
 			do {
@@ -140,9 +148,4 @@ class ChatQueueServer {
 		}
 		return headers;
 	}
-}
-
-function handleSignalForChatQueueServer( number signal, object server ) {
-	server.running = false;
-	server.server.close();
 }
