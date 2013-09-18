@@ -79,6 +79,11 @@ class ChatQueueServer {
 	function handleRequest( object client, array _request ) {
 		object content = JSON.parse(_request['Content']);
 		array _response = [ 'error' => null ];
+		
+		// There can go a long time between connections so reconnect
+		// to the Object server.
+		JSON.RPC.reconnect(JSON.RPC.host, JSON.RPC.port);
+		
 		switch( content.method ) {
 			case 'isOpen':       _response['result'] = .queue.isOpen(Workflow.Area.load(content.params.area)); break;
 			case 'addChat':      _response['result'] = .queue.addChat(Workflow.ChatSession.load(content.params.chat)); break;
@@ -88,6 +93,7 @@ class ChatQueueServer {
 			case 'advanceQueue': _response['result'] = .queue.advanceQueue(); break;
 			default: _response['error'] = [ 'code' => -1000, 'message' => 'No such method.' ];
 		}
+
 		.sendResponse(client, JSON.valueToJSON(_response));
 	}
 
