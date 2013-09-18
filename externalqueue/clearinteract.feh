@@ -29,8 +29,13 @@ namespace ClearInteract {
 		return SOAP.RPC.sendRequest(url, ' ' /* String with a space is correct */, message, body);
 	}
 	
-	function queueCentionItem( number ItemId, string taskIdentifier, string url, string errandId,
-		string area, string channel, string creationTime )
+	function queueCentionItem( number ItemId,
+	                           string taskIdentifier,
+	                           string url,
+	                           string errandId,
+	                           string area,
+	                           string channel,
+	                           string creationTime )
 	{
 		return .invoke(
 			"http://${.host}:${.port}/axis/services/UqfCention",
@@ -48,6 +53,32 @@ namespace ClearInteract {
 		);
 	}
 	
+	function queuePersonalCentionItem( number itemId,
+	                                   string taskIdentifier,
+	                                   string agentIdentifier,
+	                                   string url,
+	                                   string errandId,
+	                                   string area,
+	                                   string channel,
+	                                   string creationTime )
+	{
+		return .invoke(
+			"http://${.host}:${.port}/axis/services/UqfCention",
+			'queuePersonalCentionItem',
+			[
+				'itemId' => itemId,
+				'taskIdentifier' => taskIdentifier,
+				'agentIdentifier' => agentIdentifier,
+				'url' => url,
+				'errandId' => errandId,
+				'area' => area,
+				'channel' => channel,
+				'creationTime' => creationTime
+			],
+			'number'
+		);
+	}
+
 	function endCentionItem( number itemId, string reason ) {
 		return .invoke(
 			"http://${.host}:${.port}/axis/services/UqfCention",
@@ -117,21 +148,42 @@ class ClearInteractQueue implements ExternalQueue {
 	}
 	
 	static function addErrand( object errand, object user ) {
-		number itemId = ClearInteract.queueCentionItem(
-				errand.externalID,
-				errand.targetArea.externalID,
-				"${.SystemBaseURL}/workflow/-/external/open/${errand.id}/update-id/[at_agent_id]",
-				'errand/' + errand.id,
-				errand.targetArea.name + '/' + errand.targetArea.id,
-				errand.service.name,
-				Date.localDate(errand.timestampArrive + Date.timezone()).format('%F %H:%M')
-			);
-		if( itemId > 0 ) {
+		number itemId = errand.externalID;
+		string taskIdentifier = errand.targetArea.externalID;
+		string agentIdentifier = user.externalID;
+		string url = "${.SystemBaseURL}/workflow/-/external/open/${errand.id}/update/[at_agent_id]";
+		string errandId = 'errand/' + errand.id;
+		string area = errand.targetArea.name + '/' + errand.targetArea.id;
+		string channel = errand.service.name;
+		string creationTime = Date.localDate(errand.timestampArrive + Date.timezone()).format('%F %H:%M');
+		number returnItemId;
+
+		if( user ) {
+			returnItemId = ClearInteract.queuePersonalCentionItem(itemId,
+			                                                      taskIdentifier,
+			                                                      agentIdentifier,
+			                                                      url,
+			                                                      errandId,
+			                                                      area,
+			                                                      channel,
+			                                                      creationTime);
+		} else {
+			returnItemId = ClearInteract.queueCentionItem(itemId,
+			                                              taskIdentifier,
+			                                              url,
+			                                              errandId,
+			                                              area,
+			                                              channel,
+			                                              creationTime);
+		}
+
+		if( returnItemId > 0 ) {
 			errand.setValue('queuedInExternal', true);
-			errand.setValue('externalID', itemId);
+			errand.setValue('externalID', returnItemId);
 			errand.save();
 			return true;
 		}
+
 		return false;
 	}
 	
