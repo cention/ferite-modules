@@ -9,19 +9,36 @@ class NoChatQueue extends ChatQueue implements ChatQueueProtocol {
 			object assignedAgent = null;
 			array possibleAgents= [];
 
-			number lowestAmountOfAssignedChats = list[0]['count'];
-			list.each() using ( row ) {
-				if( row['count'] < lowestAmountOfAssignedChats ) {
-					lowestAmountOfAssignedChats = row['count'];
-				}
-			};
-			list.each() using ( row ) {
-				if( row['count'] == lowestAmountOfAssignedChats ) {
-					possibleAgents[] = row['workflow_user_id'];
-				}
-			};
+			if( F('chat.assign-to-highest-amount') ) {
+				number highestAmountOfAssignedChats = list[0]['count'];
+				list.each() using ( row ) {
+					if( row['count'] > highestAmountOfAssignedChats ) {
+						highestAmountOfAssignedChats = row['count'];
+					}
+				};
+
+				list.each() using ( row ) {
+					if( row['count'] == highestAmountOfAssignedChats ) {
+						possibleAgents[] = row['workflow_user_id'];
+					}
+				};
+			} else {
+				number lowestAmountOfAssignedChats = list[0]['count'];
+				list.each() using ( row ) {
+					if( row['count'] < lowestAmountOfAssignedChats ) {
+						lowestAmountOfAssignedChats = row['count'];
+					}
+				};
+				list.each() using ( row ) {
+					if( row['count'] == lowestAmountOfAssignedChats ) {
+						possibleAgents[] = row['workflow_user_id'];
+					}
+				};
+			}
+
 			if( possibleAgents ) {
-				assignedAgent = Workflow.User.load(possibleAgents[Math.randomNumber(0, possibleAgents.size() - 1)]);
+				number random = Math.randomNumber(0, possibleAgents.size() - 1);
+				assignedAgent = Workflow.User.load(possibleAgents[random]);
 			}
 
 			if( assignedAgent ) {			
