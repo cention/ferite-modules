@@ -9,7 +9,7 @@ protocol ChatQueueProtocol {
 	function addChat( object chat );
 	function endChat( object chat );
 	function hangUpChat( object chat );
-	function advanceQueue( number systemgroup );
+	function advanceQueue();
 }
 
 abstract class ChatQueue {

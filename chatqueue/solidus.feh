@@ -3,6 +3,5 @@ class SolidusChatQueue extends ChatQueue implements ChatQueueProtocol {
 	function addChat( object chat ) return false;
 	function endChat( object chat ) return false;
 	function hangUpChat( object chat ) return false;
-	function acceptChat( object user ) return false;
 	function advanceQueue();
 }
