@@ -25,8 +25,14 @@ uses 'chatqueue/noqueue';
 
 namespace ChatQueueInterface {
 	function _handleResponse( array response ) {
-		object content = JSON.parse(response['Content']);
-		return content.result;
+		monitor {
+			object content = JSON.parse(response['Content']);
+			if( not content.error )
+				return content.result;
+			return false;
+		} handle {
+			return false;
+		}
 	}
 	function _port( number systemgroup ) {
 		return 55500 + systemgroup;
@@ -77,21 +83,33 @@ class ChatQueueServer {
 	}
 
 	function handleRequest( object client, array _request ) {
-		object content = JSON.parse(_request['Content']);
-		array _response = [ 'error' => null ];
+		object content;
+		array _response;
 		
-		// There can go a long time between connections so reconnect
-		// to the Object server.
-		JSON.RPC.reconnect(JSON.RPC.host, JSON.RPC.port);
-		
-		switch( content.method ) {
-			case 'isOpen':       _response['result'] = .queue.isOpen(Workflow.Area.load(content.params.area)); break;
-			case 'addChat':      _response['result'] = .queue.addChat(Workflow.ChatSession.load(content.params.chat)); break;
-			case 'endChat':      _response['result'] = .queue.endChat(Workflow.ChatSession.load(content.params.chat)); break;
-			case 'hangUpChat':   _response['result'] = .queue.hangUpChat(Workflow.ChatSession.load(content.params.chat)); break;
-			case 'acceptChat':   _response['result'] = .queue.acceptChat(Workflow.User.load(content.params.user)); break;
-			case 'advanceQueue': _response['result'] = .queue.advanceQueue(); break;
-			default: _response['error'] = [ 'code' => -1000, 'message' => 'No such method.' ];
+		monitor {
+			content = JSON.parse(_request['Content']);
+		} handle {
+			_response['error'] = [ 'code' => -2000, 'message' => 'Unable to parse request' ];
+		} else {
+			// It can go a long time between connections so reconnect
+			// to the Object server.
+			JSON.RPC.reconnect(JSON.RPC.host, JSON.RPC.port);
+			
+			_response = [ 'error' => null ];
+
+			monitor {
+				switch( content.method ) {
+					case 'isOpen':       _response['result'] = .queue.isOpen(Workflow.Area.load(content.params.area)); break;
+					case 'addChat':      _response['result'] = .queue.addChat(Workflow.ChatSession.load(content.params.chat)); break;
+					case 'endChat':      _response['result'] = .queue.endChat(Workflow.ChatSession.load(content.params.chat)); break;
+					case 'hangUpChat':   _response['result'] = .queue.hangUpChat(Workflow.ChatSession.load(content.params.chat)); break;
+					case 'acceptChat':   _response['result'] = .queue.acceptChat(Workflow.User.load(content.params.user)); break;
+					case 'advanceQueue': _response['result'] = .queue.advanceQueue(); break;
+					default: _response['error'] = [ 'code' => -1000, 'message' => 'No such method' ];
+				}
+			} handle {
+				_response['error'] = [ 'code' => -3000, 'message' => 'Internal server error' ];
+			}
 		}
 
 		.sendResponse(client, JSON.valueToJSON(_response));
