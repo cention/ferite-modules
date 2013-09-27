@@ -318,4 +318,12 @@ class ClearInteractQueue implements ExternalQueue {
 
 		return false;
 	}
+
+	static function getChatAgents( object area ) {
+		return [];
+	}
+
+	static function forwardChatToAgent( object chat, object user ) {
+		return false;
+	}
 }
