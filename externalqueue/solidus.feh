@@ -36,6 +36,13 @@ class GetServiceGroupStatusResult {
 	[rpc_import 'ServiceGroupID:number', 'Open:boolean'];
 }
 
+class GetOMAgentsByGroupResult {
+	number ServiceGroupID;
+	array AgentList;
+
+	[rpc_import 'ServiceGroupID:number', 'AgentList:array<number>'];
+}
+
 class IVRInformation {
 	string Data;
 	string Label;
@@ -68,17 +75,17 @@ namespace Solidus {
 		message += '<soap:Body>';
 		message += "<${f} xmlns=\"${.soapActionURL}/\">";
 
-		if( f != 'GetOpenMediaRequestStatusByID' and f != 'GetServiceGroupStatus' )
+		if( f != 'GetOpenMediaRequestStatusByID' and f != 'GetServiceGroupStatus' and f != 'GetOMAgentsByGroup' )
 			message += '<request>';
 
 		parameters.eachWithIndex() using ( value, index ) {
 			string name = parameters.getName(index);
-			message += SOAP.toSOAP( name, value, (f != 'GetOpenMediaRequestStatusByID' and f != 'GetServiceGroupStatus'
+			message += SOAP.toSOAP( name, value, (f != 'GetOpenMediaRequestStatusByID' and f != 'GetServiceGroupStatus' and f != 'GetOMAgentsByGroup'
 				? 'http://schemas.datacontract.org/2004/07/Solidus.OpenMedia.Contracts.DataContracts'
 				: '') );
 		};
 
-		if( f != 'GetOpenMediaRequestStatusByID' and f != 'GetServiceGroupStatus' )
+		if( f != 'GetOpenMediaRequestStatusByID' and f != 'GetServiceGroupStatus' and f != 'GetOMAgentsByGroup' )
 			message += '</request>';
 
 		message += "</${f}>";
@@ -210,6 +217,29 @@ namespace Solidus {
 					parameters,
 					'GetServiceGroupStatusResult',
 					'GetServiceGroupStatusResult'
+				);
+		} handle {
+			result = null;
+		}
+
+		return result;
+	}
+
+	function getOMAgentsByGroup( number serviceGroupID ) {
+		object result;
+
+		monitor {
+			array parameters = [];
+
+			parameters['serviceGroupID'] = serviceGroupID;
+
+			result = .sendRequest(
+					.serverAddress + '/OpenMediaService',
+					.soapActionURL + '/IOpenMediaService/GetOMAgentsByGroup',
+					'GetOMAgentsByGroup',
+					parameters,
+					'GetOMAgentsByGroupResult',
+					'GetOMAgentsByGroupResult'
 				);
 		} handle {
 			result = null;
@@ -385,17 +415,41 @@ class SolidusQueue implements ExternalQueue {
 		return 0;
 	}
 
+	static function getChatAgents( object area ) {
+		object result = Solidus.getOMAgentsByGroup(area.solidusServiceGroupID);
+		array list = [];
+		if( result ) {
+			array user_ids = Workflow.User.listFromCache(area.id).process() using ( item ) {
+				return item['id'];
+			};
+
+			object current;
+			monitor {
+				current = Workflow.User.fetchUserObject();
+			} handle {
+				current = null;
+			}
+
+			result.AgentList.each() using ( agentID ) {
+				object user = Workflow.User.bySolidusAgentID(agentID);
+				if( user and (current == null or user.id != current.id) and user_ids.valueExists(user.id) )
+					list[] = user;
+			};
+		}
+		return list;
+	}
+
 	static function assignChatAgent( object area ) {
 		return null;
 	}
 
-	static function _addChat( object chat ) {
+	static function _addChat( object chat, object user ) {
 		object setting = Workflow.SolidusChannelSetting.byChannel(chat.systemGroup, Workflow.Errand.SERVICE_CHAT);
 		object area = Workflow.Area.load(chat.area.id);
 
 		string privateData = .SystemBaseURL + '/solidus/login/-/chat/' + chat.id;
-		number preferredAgentID = 0;
-		boolean forceToPreferredAgent = false;
+		number preferredAgentID = (user ? user.solidusAgentID : 0);
+		boolean forceToPreferredAgent = (preferredAgentID ? true : false);
 		array ivrInfo = [
 			'Area' => chat.area.name,
 			'Email' => (chat.client and chat.client.email
@@ -441,7 +495,7 @@ class SolidusQueue implements ExternalQueue {
 	}
 
 	static function addChat( object chat ) {
-		return ._addChat(chat);
+		return ._addChat(chat, null);
 	}
 
 	static function removeChat( object chat ) {
@@ -451,6 +505,15 @@ class SolidusQueue implements ExternalQueue {
 		chat.setValue('queuedInExternal', false);
 		chat.save();
 		return true;
+	}
+
+	static function forwardChatToAgent( object chat, object user ) {
+		number oldExternalID = chat.externalID;
+		if( ._addChat(chat, user) ) {
+			Solidus.cancelRequest(oldExternalID, true);
+			return true;
+		}
+		return false;
 	}
 }
 
