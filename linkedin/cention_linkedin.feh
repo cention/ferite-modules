@@ -12,51 +12,6 @@ uses "string", "JSON";
    * Fetch Users message and Post messages to users timeline.
 **/
 
-namespace modifies String {
-    function urlDecode( string encoded ) {
-        string decoded;
-        number i = 0;
-        number max = encoded.length() - 6;
-        while( i <= max ) {
-			string character = encoded[i];
-			if( character == '%' and encoded[i + 1] == 'u' ) {
-				number start = i + 2;
-				number end = start + 4;
-				number value = String.hexStringToNumber((end < encoded.length() ? encoded[start..end] : encoded[start..]));
-				i += 6;						   
-				if( value < 0x0080 ) { // 1 byte: 0xxxxxxx
-						character = String.numberToByte(value);
-				} else if( value < 0x0800 ) { // 2 bytes: 110xxxxx 10xxxxxx
-						character = String.numberToByte(((value & 0x07c0) >> 6) | 0xc0) +
-									String.numberToByte((value & 0x3f) | 0x80);
-				} else { // 3 bytes: 1110xxxx 10xxxxxx 10xxxxxx
-						character = String.numberToByte(((value & 0xf000) >> 12) | 0xe0) + 
-									String.numberToByte(((value & 0x0fc0) >> 6) | 0x80) + 
-									String.numberToByte((value & 0x3f) | 0x80);
-				}
-			} else {
-				i++;
-			}
-				   
-			decoded += character;
-		}
-        return decoded + (i < encoded.length() ? encoded[i..] : '');
-    }
-}
-namespace modifies Array {
-	function ksort( array values ) {
-		array result = [];
-		array keys = values.keys();
-		keys = keys.sort() using ( a, b ) {
-			return String.orderedCompare(a, b);
-		};
-		keys.each() using ( key ) {
-			result[key] = values[key];
-		};
-		return result;
-	}
-}
-
 namespace Linkedin {
 	class LinkedinMain {	
 		 
@@ -102,7 +57,7 @@ namespace Linkedin {
 			curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
 			curl.setOption(Curl.CURLOPT_CUSTOMREQUEST,'GET');
 			curl.setOption(Curl.CURLOPT_POSTFIELDS, '');
-			curl.setOption(Curl.CURLOPT_VERBOSE, 1);
+			//curl.setOption(Curl.CURLOPT_VERBOSE, 1);
 			curl.setOption(Curl.CURLOPT_HTTPHEADER, header.join("\n"));
 			if( not curl.exec() ) {
 				raise new Error("Error when connecting to: ${baseURI}");
@@ -119,7 +74,7 @@ namespace Linkedin {
 			curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
 			curl.setOption(Curl.CURLOPT_CUSTOMREQUEST,'GET');
 			curl.setOption(Curl.CURLOPT_POSTFIELDS, '');
-			curl.setOption(Curl.CURLOPT_VERBOSE, 1);
+			//curl.setOption(Curl.CURLOPT_VERBOSE, 1);
 			curl.setOption(Curl.CURLOPT_HTTPHEADER, header.join("\n"));
 			if( curl.exec() ) {
 				content = curl.getContent();
@@ -145,7 +100,7 @@ namespace Linkedin {
 			curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
 			curl.setOption(Curl.CURLOPT_CUSTOMREQUEST,'GET');
 			curl.setOption(Curl.CURLOPT_POSTFIELDS, '');
-			curl.setOption(Curl.CURLOPT_VERBOSE, 1);
+			//curl.setOption(Curl.CURLOPT_VERBOSE, 1);
 			curl.setOption(Curl.CURLOPT_HTTPHEADER, header.join("\n"));
 			if( curl.exec() ) {
 				content = curl.getContent();
@@ -172,7 +127,7 @@ namespace Linkedin {
 			curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
 			curl.setOption(Curl.CURLOPT_CUSTOMREQUEST,'POST');
 			curl.setOption(Curl.CURLOPT_POSTFIELDS, message);
-			curl.setOption(Curl.CURLOPT_VERBOSE, 1);
+			//curl.setOption(Curl.CURLOPT_VERBOSE, 1);
 			curl.setOption(Curl.CURLOPT_SSL_VERIFYPEER, 1);
 			curl.setOption(Curl.CURLOPT_HTTPHEADER, header.join("\n"));
 			if( curl.exec() ) {

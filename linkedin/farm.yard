@@ -4,7 +4,7 @@
 	<property id="name" value="cention-linkedin" />
 	<property id="version" value="3.2" />
 
-	<collection id="twitter">
+	<collection id="linkedin">
 		<property type="prefix" value="$(FeriteModuleSourceDir)" /> 
 
 		<list type="source">
