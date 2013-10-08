@@ -1,0 +1,143 @@
+uses 'curl';
+uses 'console';
+uses "xml";
+uses "array","date",'math','sys','MHash','regexp';
+uses "string", "JSON";
+
+/**
+   * Created @Mujibur Rahman 
+   * Email: mujibur.rahman@cention.se
+   * Date: 27-01-2013
+   * Name: LinkedIN module which will be able to Authenticate, Authorize, 
+   * Fetch Users message and Post messages to users timeline.
+**/
+
+namespace Linkedin {
+	class LinkedinMain {	
+		 
+		constructor(){
+		}
+		function buildBaseString(string baseURI, array params, string method){
+			array r = []; //temporary array
+			params = params.ksort(); //sort params alphabetically by keys
+			params.eachWithIndex() using ( value, index ) {
+				string key = params.getName(index);
+				r[] = "${key}=" + String.urlEncode("${value}"); //create key=value strings
+			};
+
+			return method.toUpper() + "&" + baseURI.urlEncode() + '&' + r.join('&').urlEncode(); //return complete base string
+		}
+		function buildAuthorizationHeader(array oauth){
+			string r = 'Authorization: OAuth '; //header prefix
+
+			array values = []; //temporary key=value array
+			oauth.eachWithIndex() using ( value, index ) {
+				string key = oauth.getName(index);
+				values[] = "${key}=\"" + String.urlEncode("${value}") + "\""; //encode key=value string
+			};
+
+			r += values.join(', '); //reassemble
+			return r; //return full authorization header
+		}
+		function getCompositeKey(string baseString, string consumerSecret, string requestToken){
+			string compositeKey = consumerSecret.urlEncode() + '&' + requestToken.urlEncode();
+			string oauth_signature = MHash.hmacString(baseString, compositeKey, MHash.SHA1).base64encode(); //sign the base string
+			return oauth_signature; // Even though the name of the function is 'getCompositeKey' this function actually returns oauth_signature
+		}
+	}
+	class LinkedinAuthentication extends LinkedinMain{	
+		function sendRequest(array oauth, string baseURI, string header){
+			return .sendRequest(oauth, baseURI);
+		}
+		function sendRequest(array oauth, string baseURI){
+			array header; 
+			object curl = new Curl.Curl();
+			header = [ .buildAuthorizationHeader(oauth) ];
+			curl.setOption(Curl.CURLOPT_URL, baseURI);
+			curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
+			curl.setOption(Curl.CURLOPT_CUSTOMREQUEST,'GET');
+			curl.setOption(Curl.CURLOPT_POSTFIELDS, '');
+			//curl.setOption(Curl.CURLOPT_VERBOSE, 1);
+			curl.setOption(Curl.CURLOPT_HTTPHEADER, header.join("\n"));
+			if( not curl.exec() ) {
+				raise new Error("Error when connecting to: ${baseURI}");
+			}
+			return curl.getContent();
+		}
+		function sendRequestForGetProfile(array oauth, string baseURI){
+			array header;
+			object data;
+			string content; 
+			object curl = new Curl.Curl();
+			header = [ .buildAuthorizationHeader(oauth), "Content-Type:application/json", "x-li-format:json" ];
+			curl.setOption(Curl.CURLOPT_URL, baseURI);
+			curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
+			curl.setOption(Curl.CURLOPT_CUSTOMREQUEST,'GET');
+			curl.setOption(Curl.CURLOPT_POSTFIELDS, '');
+			//curl.setOption(Curl.CURLOPT_VERBOSE, 1);
+			curl.setOption(Curl.CURLOPT_HTTPHEADER, header.join("\n"));
+			if( curl.exec() ) {
+				content = curl.getContent();
+				monitor {
+					data = JSON.parse( content );					
+				} handle {
+					raise new Error("Error when parsing response: ${content}");
+				}
+			} 
+			else {
+				raise new Error("Error when connecting to: ${baseURI}");
+			}			
+			return data;
+		}
+		
+		function sendRequestForFetch(array oauth, string baseURI){
+			array header;
+			object data;
+			string content; 
+			object curl = new Curl.Curl();
+			header = [ .buildAuthorizationHeader(oauth), "Content-Type:application/json", "x-li-format:json" ];
+			curl.setOption(Curl.CURLOPT_URL, baseURI);
+			curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
+			curl.setOption(Curl.CURLOPT_CUSTOMREQUEST,'GET');
+			curl.setOption(Curl.CURLOPT_POSTFIELDS, '');
+			//curl.setOption(Curl.CURLOPT_VERBOSE, 1);
+			curl.setOption(Curl.CURLOPT_HTTPHEADER, header.join("\n"));
+			if( curl.exec() ) {
+				content = curl.getContent();
+				//Console.println(content); Sys.exit(1);
+				monitor {
+					data = JSON.parse( content );					
+				} handle {
+					raise new Error("Error when parsing response: ${content}");
+				}
+			} 
+			else {
+				raise new Error("Error when connecting to: ${baseURI}");
+			}			
+			return data;
+		}
+		
+		function sendMsessageToGroupPostComment(array oauth, string baseURI, string message){
+			array header;
+			object data;
+			string content; 
+			object curl = new Curl.Curl();			
+			header = [ .buildAuthorizationHeader(oauth), "Content-Type:application/xml;charset=utf-8"];
+			curl.setOption(Curl.CURLOPT_URL, baseURI);
+			curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
+			curl.setOption(Curl.CURLOPT_CUSTOMREQUEST,'POST');
+			curl.setOption(Curl.CURLOPT_POSTFIELDS, message);
+			//curl.setOption(Curl.CURLOPT_VERBOSE, 1);
+			curl.setOption(Curl.CURLOPT_SSL_VERIFYPEER, 1);
+			curl.setOption(Curl.CURLOPT_HTTPHEADER, header.join("\n"));
+			if( curl.exec() ) {
+				content = curl.getContent(); 
+			} 
+			else {
+				raise new Error("Error when connecting to: ${baseURI}");
+			}			
+			return content;
+		}
+		
+	}	
+}

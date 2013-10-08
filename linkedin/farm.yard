@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<yard name="linkedin">
+
+	<property id="name" value="cention-linkedin" />
+	<property id="version" value="3.2" />
+
+	<collection id="linkedin">
+		<property type="prefix" value="$(FeriteModuleSourceDir)" /> 
+
+		<list type="source">
+			<file name="cention_linkedin.feh" />
+		</list>
+	</collection>
+
+	<phase id="install">
+		<perform action="install" target="linkedin" />
+	</phase>
+</yard>
