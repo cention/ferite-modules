@@ -132,6 +132,15 @@ namespace ClearInteract {
 			'number'
 		);
 	}
+
+	function reportQueueLength( string taskIdentifier, number queueLength ) {
+		return .invoke(
+			"http://${.host}:${.port}/axis/services/UqfCentionSession",
+			'reportQueueLength',
+			[ 'taskIdentifier' => taskIdentifier, 'queueLength' => queueLength ],
+			'number'
+		);
+	}
 }
 
 class ClearInteractQueue implements ExternalQueue {
@@ -181,6 +190,31 @@ class ClearInteractQueue implements ExternalQueue {
 			errand.setValue('queuedInExternal', true);
 			errand.setValue('externalID', returnItemId);
 			errand.save();
+		} else if( returnItemId != -7 /* -7 means already queued */ ) {
+			// Because of how CI works the queueCentionItem request will fail when it is performed
+			// for Return to inbox, Forward to Agent and Forward to Area.
+			// This is because after the errand has been handled and endCentionItem has been sent 
+			// the agent which handled the errand goes into a post-handle state.
+			// The agent can be in this state from a couple of seconds to a couple of minutes.
+			// During this time CI consider the errand still allocated to the agent.
+			// This means that the re-queue attempt will fail.
+			// Whe handle this by saving the request parameters which can later
+			// be picked up by a background script that tries to re-run the request.
+			// Since that will eventually succeed true is returned here so that the code
+			// which calls this function treats it as a success.
+
+			object action = new Workflow.ClearInteractAction();
+			action.setValue('type', Workflow.ClearInteract.ACTION_QUEUE_ITEM);
+			action.setValue('errand', errand);
+			action.setValue('itemId', itemId);
+			action.setValue('taskIdentifier', taskIdentifier);
+			action.setValue('url', url);
+			action.setValue('errandId', errandId);
+			action.setValue('area', area);
+			action.setValue('channel', channel);
+			action.setValue('creationTime', creationTime);
+			action.save();
+
 			return true;
 		}
 

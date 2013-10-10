@@ -119,6 +119,12 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 			}
 		};
 	}
+	function _reportQueueLength( object area ) {
+		array chats = Workflow.ChatSession.activeListForArea(area.id);
+		string taskIdentifier = area.externalID;
+		string queueLength = chats.size();
+		ClearInteract.reportQueueLength(taskIdentifier, queueLength);
+	}
 
 	function constructor {
 		ClearInteract.host = F('clearinteract.server-address');
@@ -134,17 +140,20 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 		object assignedAgent = ._assignAgent(chat.area);
 		if( assignedAgent ) {
 			._startChat(chat, assignedAgent);
+			._reportQueueLength(chat.area);
 			return true;
 		} else {
 			object unassignedResource = Workflow.ClearInteractAgentResource.currentUnassigned(.currentSystemGroup());
 			if( unassignedResource ) {
 				chat.setValue('status', Workflow.ChatSession.STATUS_WAITING_ON_AGENT);
 				chat.save();
+				._reportQueueLength(chat.area);
 				return true;
 			} else {
 				if( ._allocateAgent(chat.area) ) {
 					chat.setValue('status', Workflow.ChatSession.STATUS_WAITING_ON_AGENT);
 					chat.save();
+					._reportQueueLength(chat.area);
 					return true;
 				}
 			}
@@ -160,11 +169,13 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 	function endChat( object chat ) {
 		boolean result = ._endChat(chat);
 		.advanceQueue();
+		._reportQueueLength(chat.area);
 		return result;
 	}
 	function hangUpChat( object chat ) {
 		boolean result = ._endChat(chat);
 		.advanceQueue();
+		._reportQueueLength(chat.area);
 		return result;
 	}
 	function advanceQueue() {
