@@ -2,7 +2,7 @@
 <yard name="linkedin">
 
 	<property id="name" value="cention-linkedin" />
-	<property id="version" value="3.2" />
+	<property id="version" value="3.4" />
 
 	<collection id="linkedin">
 		<property type="prefix" value="$(FeriteModuleSourceDir)" /> 
