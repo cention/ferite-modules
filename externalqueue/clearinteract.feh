@@ -159,7 +159,7 @@ class ClearInteractQueue implements ExternalQueue {
 	static function addErrand( object errand, object user ) {
 		number itemId = (errand.externalID ? errand.externalID : -1);
 		string taskIdentifier = errand.targetArea.externalID;
-		string agentIdentifier = (user ? user.externalID : -1);
+		string agentIdentifier = (user ? user.externalID : '');
 		string url = "${.SystemBaseURL}/workflow/-/external/open/${errand.id}/update/[at_agent_id]";
 		string errandId = 'errand/' + errand.id;
 		string area = errand.targetArea.name + '/' + errand.targetArea.id;
@@ -190,6 +190,7 @@ class ClearInteractQueue implements ExternalQueue {
 			errand.setValue('queuedInExternal', true);
 			errand.setValue('externalID', returnItemId);
 			errand.save();
+			return true;
 		} else if( returnItemId != -7 /* -7 means already queued */ ) {
 			// Because of how CI works the queueCentionItem request will fail when it is performed
 			// for Return to inbox, Forward to Agent and Forward to Area.
@@ -204,7 +205,7 @@ class ClearInteractQueue implements ExternalQueue {
 			// which calls this function treats it as a success.
 
 			object action = new Workflow.ClearInteractAction();
-			action.setValue('type', Workflow.ClearInteract.ACTION_QUEUE_ITEM);
+			action.setValue('type', Workflow.ClearInteractAction.ACTION_QUEUE_ITEM);
 			action.setValue('errand', errand);
 			action.setValue('itemId', itemId);
 			action.setValue('taskIdentifier', taskIdentifier);
