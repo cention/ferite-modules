@@ -191,7 +191,7 @@ class ClearInteractQueue implements ExternalQueue {
 			errand.setValue('externalID', returnItemId);
 			errand.save();
 			return true;
-		} else if( returnItemId != -7 /* -7 means already queued */ ) {
+		} else if( returnItemId == -8 ) {
 			// Because of how CI works the queueCentionItem request will fail when it is performed
 			// for Return to inbox, Forward to Agent and Forward to Area.
 			// This is because after the errand has been handled and endCentionItem has been sent 
@@ -205,6 +205,7 @@ class ClearInteractQueue implements ExternalQueue {
 			// which calls this function treats it as a success.
 
 			object action = new Workflow.ClearInteractAction();
+			action.setValue('systemgroup', Workflow.SystemGroup.current());
 			action.setValue('type', Workflow.ClearInteractAction.ACTION_QUEUE_ITEM);
 			action.setValue('errand', errand);
 			action.setValue('itemId', itemId);
