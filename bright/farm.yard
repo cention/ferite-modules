@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<yard name="bright">
+
+	<property id="name" value="cention-bright" />
+	<property id="version" value="3.2" />
+	
+	<collection id="bright">
+		<property type="prefix" value="$(FeriteModuleSourceDir)" />
+
+		<list type="source">
+			<file name="ferite-module-bright.feh" />
+		</list>
+	</collection>
+
+	<phase id="install">
+		<perform action="install" target="bright" />
+	</phase>
+</yard>
