@@ -120,7 +120,7 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 		};
 	}
 	function _reportQueueLength( object area ) {
-		array chats = Workflow.ChatSession.activeListForArea(area.id);
+		array chats = Workflow.ChatSession.unassignedList(area.id);
 		string taskIdentifier = area.externalID;
 		string queueLength = chats.size();
 		ClearInteract.reportQueueLength(taskIdentifier, queueLength);
@@ -191,6 +191,7 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 				nextChat = Workflow.ChatSession.nextUnassignedChat(areaIDs);
 				if( nextChat ) {
 					._startChat(nextChat, user);
+					._reportQueueLength(nextChat.area);
 					continue;
 				}
 				break;
