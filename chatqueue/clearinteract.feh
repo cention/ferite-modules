@@ -122,7 +122,7 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 	function _reportQueueLength( object area ) {
 		array chats = Workflow.ChatSession.unassignedList(area.id);
 		string taskIdentifier = area.externalID;
-		string queueLength = chats.size();
+		number queueLength = chats.size();
 		ClearInteract.reportQueueLength(taskIdentifier, queueLength);
 	}
 
