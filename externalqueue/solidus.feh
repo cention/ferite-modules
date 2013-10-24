@@ -416,26 +416,76 @@ class SolidusQueue implements ExternalQueue {
 	}
 
 	static function getChatAgents( object area ) {
-		object result = Solidus.getOMAgentsByGroup(area.solidusServiceGroupID);
+		object fullArea = Workflow.Area.load(area.id);
+
 		array list = [];
-		if( result ) {
-			array user_ids = Workflow.User.listFromCache(area.id).process() using ( item ) {
-				return item['id'];
-			};
+		array solidusAgentIDs = [];
+		array agentToServiceGroupMap = [];
+		array usersByGroupList = [];
+		array groupNames = [];
 
-			object current;
-			monitor {
-				current = Workflow.User.fetchUserObject();
-			} handle {
-				current = null;
-			}
+		array userIDsInTargetArea = Workflow.User.listFromCache(fullArea.id).process() using ( item ) {
+			return item['id'];
+		};
 
-			result.AgentList.each() using ( agentID ) {
-				object user = Workflow.User.bySolidusAgentID(agentID);
-				if( user and (current == null or user.id != current.id) and user_ids.valueExists(user.id) )
-					list[] = user;
-			};
+		string serviceGroupIDs = (fullArea.solidusServiceGroupIDsForChat
+			? fullArea.solidusServiceGroupIDsForChat
+			: '' + fullArea.solidusServiceGroupID);
+
+		object currentUser;
+		monitor {
+			currentUser = Workflow.User.fetchUserObject();
+		} handle {
+			currentUser = null;
 		}
+
+		serviceGroupIDs.toArray(',').each() using ( _serviceGroupID ) {
+			number serviceGroupID = _serviceGroupID.trim(' ').toNumber();
+			object result = Solidus.getOMAgentsByGroup(serviceGroupID);
+			if( result ) {
+				result.AgentList.each() using ( agentID ) {
+					if( not solidusAgentIDs.valueExists(agentID) ) {
+						solidusAgentIDs[] = agentID;
+						agentToServiceGroupMap["$agentID"] = serviceGroupID;
+					}
+				};
+			}
+		};
+
+		solidusAgentIDs.each() using ( agentID ) {
+			object user = Workflow.User.bySolidusAgentID(agentID);
+			if( user and (currentUser == null or user.id != currentUser.id) and userIDsInTargetArea.valueExists(user.id) ) {
+				array validGroups = Workflow.AreaAgentGroup.idListByAreaID(user.systemGroup, fullArea.id);
+				array groups = Workflow.AreaAgentGroup.listByUserID(user.systemGroup, user.id);
+				groups.each() using ( group ) {
+					if( validGroups.valueExists(group.id) ) {
+						if( not usersByGroupList.keyExists(group.name) )
+							usersByGroupList[group.name] = [];
+						usersByGroupList[group.name][] = user;
+					}
+				};
+			}
+		};
+
+		groupNames = usersByGroupList.keys().sort() using (a, b) {
+			return String.orderedCompare(a, b);
+		};
+
+		groupNames.each() using ( groupName ) {
+			array users = usersByGroupList[groupName].sort() using ( a, b ) {
+				return String.orderedCompare(a.username, b.username);
+			};
+			list[] = [ 'id' => 0, 'value' => groupName, 'separator' => true ];
+			users.each() using ( user ) {
+				list[] = [ 'id' => user.id, 'value' => user.username ];
+				// Tobias 2013-10-24: Save a Service Group ID that we know that
+				// this user has access to so that it can be used when forwarding
+				// a chat to this user.
+				user.setValue('solidusLastKnownValidServiceGroupID', agentToServiceGroupMap["${user.solidusAgentID}"]);
+				user.delayedSave();
+			};
+		};
+
 		return list;
 	}
 
@@ -443,7 +493,7 @@ class SolidusQueue implements ExternalQueue {
 		return null;
 	}
 
-	static function _addChat( object chat, object user ) {
+	static function _addChat( object chat, object user, number serviceGroupID ) {
 		object setting = Workflow.SolidusChannelSetting.byChannel(chat.systemGroup, Workflow.Errand.SERVICE_CHAT);
 		object area = Workflow.Area.load(chat.area.id);
 
@@ -474,7 +524,7 @@ class SolidusQueue implements ExternalQueue {
 
 		Logger.info(Logger.APPLICATION_SOLIDUS, "Sending add request for Workflow.ChatSession(${chat.id}).");
 
-		result = Solidus.addRequest(area.solidusServiceGroupID,
+		result = Solidus.addRequest((serviceGroupID ? serviceGroupID : area.solidusServiceGroupID),
 		                            preferredAgentID,
 		                            forceToPreferredAgent,
 		                            privateData,
@@ -494,6 +544,10 @@ class SolidusQueue implements ExternalQueue {
 		}
 	}
 
+	static function _addChat( object chat, object user ) {
+		return ._addChat(chat, user, 0);
+	}
+
 	static function addChat( object chat ) {
 		return ._addChat(chat, null);
 	}
@@ -509,7 +563,7 @@ class SolidusQueue implements ExternalQueue {
 
 	static function forwardChatToAgent( object chat, object user ) {
 		number oldExternalID = chat.externalID;
-		if( ._addChat(chat, user) ) {
+		if( ._addChat(chat, user, user.solidusLastKnownValidServiceGroupID) ) {
 			Solidus.cancelRequest(oldExternalID, true);
 			return true;
 		}
