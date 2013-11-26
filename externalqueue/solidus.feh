@@ -394,7 +394,7 @@ class SolidusQueue implements ExternalQueue {
 					// TODO: Log status message here
 				}
 			} else {
-				Logger.info(Logger.APPLICATION_SOLIDUS, "Got status from Solius for errand ${errand.id} (${errand.solidusOpenMediaID})" +
+				Logger.info(Logger.APPLICATION_SOLIDUS, "Got status from Solidus for errand ${errand.id} (${errand.solidusOpenMediaID})" +
 					" but media had no previous requests registered");
 			}
 		} else {
