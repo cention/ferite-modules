@@ -1,8 +1,9 @@
 protocol ExternalQueue {
 	static function name();
 	static function configure( array options );
+	static function finaliseActions();
 	static function addErrand( object errand, object user );
-	static function removeErrand( object errand, number type );
+	static function removeErrand( object errand, number type, boolean wasOpenedByExternalSystem );
 	static function pullErrand( object errand);
 	static function chatAgentsAvailable( object area );
 	static function getChatAgents( object area );
@@ -46,7 +47,10 @@ namespace ExternalQueueInterface {
 			]);
 		}
 	}
-	
+
+	function finaliseActions() {
+		return .queue.finaliseActions();
+	}
 	function addErrand( object errand ) {
 		return .queue.addErrand(errand, null);
 	}
@@ -54,10 +58,13 @@ namespace ExternalQueueInterface {
 		return .queue.addErrand(errand, user);
 	}
 	function removeErrand( object errand ) {
-		return .queue.removeErrand(errand, 0);
+		return .queue.removeErrand(errand, 0, false);
 	}
 	function removeErrand( object errand, number type ) {
-		return .queue.removeErrand(errand, type);
+		return .queue.removeErrand(errand, type, false);
+	}
+	function removeErrand( object errand, number type, boolean wasOpenedByExternalSystem ) {
+		return .queue.removeErrand(errand, type, wasOpenedByExternalSystem);
 	}
 	function pullErrand( object errand ) {
 		return .queue.pullErrand(errand);

@@ -281,6 +281,11 @@ namespace Solidus {
 	}
 }
 
+class SolidusCancelRequestAction {
+	number openMediaID;
+	boolean cancelIfAllocated;
+}
+
 class SolidusQueue implements ExternalQueue {
 	static string SystemBaseURL;
 
@@ -306,6 +311,20 @@ class SolidusQueue implements ExternalQueue {
 		                   setting.maxNumberOfSessions,
 		                   setting.allowDifferentTypes,
 		                   false /* resetAllOptions */);
+	}
+
+	static array queuedRemoveErrandActions;
+	static function finaliseActions() {
+		.queuedRemoveErrandActions.each() using ( action ) {
+			boolean result = ._remove(action.openMediaID, action.cancelIfAllocated);
+			if( not result ) {
+				// The action is saved so it can be re-tried in the background instead.
+				object savedAction = new Workflow.SolidusCancelRequestAction();
+				savedAction.setValue('openMediaID', action.openMediaID);
+				savedAction.setValue('cancelIfAllocated', action.cancelIfAllocated);
+				savedAction.save();
+			}
+		};
 	}
 
 	static function addErrand( object errand, object user ) {
@@ -348,20 +367,44 @@ class SolidusQueue implements ExternalQueue {
 		}
 	}
 
-	static function removeErrand( object errand, number type ) {
+	static function removeErrand( object errand, number type, boolean wasOpenedByExternalSystem ) {
+		if( wasOpenedByExternalSystem ) {
+			object action = new SolidusCancelRequestAction();
+			action.openMediaID = errand.solidusOpenMediaID;
+			action.cancelIfAllocated = true;
+
+			.queuedRemoveErrandActions[] = action;
+
+			errand.setValue('queuedInExternal', false);
+			errand.setValue('solidusOpenMediaID', 0);
+			errand.save();
+
+			return true;
+		}
+
 		return ._remove(errand, true);
 	}
 	static function _remove( object errand, boolean cancelIfAllocated ) {
 		.setOptions(errand);
-		Logger.info(Logger.APPLICATION_SOLIDUS, "Sending cancel request for Workflow.Errand(${errand.id})");
+		Logger.info(Logger.APPLICATION_SOLIDUS, "Sending cancel request for Workflow.Errand(${errand.id}) (${errand.solidusOpenMediaID})");
 		if( Solidus.cancelRequest(errand.solidusOpenMediaID, cancelIfAllocated) ) {
-			Logger.info(Logger.APPLICATION_SOLIDUS, "Cancel request returned true for Workflow.Errand(${errand.id})");
+			Logger.info(Logger.APPLICATION_SOLIDUS, "Cancel request returned true for Workflow.Errand(${errand.id}) (${errand.solidusOpenMediaID})");
 			errand.setValue('queuedInExternal', false);
 			errand.setValue('solidusOpenMediaID', 0);
 			errand.save();
 			return true;
 		} else {
-			Logger.info(Logger.APPLICATION_SOLIDUS, "Cancel request returned false for Workflow.Errand(${errand.id})");
+			Logger.info(Logger.APPLICATION_SOLIDUS, "Cancel request returned false for Workflow.Errand(${errand.id}) (${errand.solidusOpenMediaID})");
+			return false;
+		}
+	}
+	static function _remove( number openMediaID, boolean cancelIfAllocated ) {
+		Logger.info(Logger.APPLICATION_SOLIDUS, "Sending cancel request for Open Media ID ${openMediaID} (${cancelIfAllocated})");
+		if( Solidus.cancelRequest(openMediaID, cancelIfAllocated) ) {
+			Logger.info(Logger.APPLICATION_SOLIDUS, "Cancel request returned true for Open Media ID ${openMediaID} (${cancelIfAllocated})");
+			return true;
+		} else {
+			Logger.info(Logger.APPLICATION_SOLIDUS, "Cancel request returned false for Open Media ID ${openMediaID} (${cancelIfAllocated})");
 			return false;
 		}
 	}
