@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+<yard name="ChatQueue">
+
+	<property id="name" value="cention-chatqueue" />
+	<property id="version" value="3.2" />
+	
+	<collection id="externalqueue">
+		<list type="module">
+			<file name="chatqueue/cention.feh" />
+			<file name="chatqueue/chatqueue.feh" />
+			<file name="chatqueue/clearinteract.feh" />
+			<file name="chatqueue/noqueue.feh" />
+			<file name="chatqueue/solidus.feh" />
+		</list>
+	</collection>
+
+	<phase id="install">
+		<copy source="externalqueue.module" target="$(FeriteModuleSourceDir)" maintainpath="true" />
+	</phase>
+</yard>
