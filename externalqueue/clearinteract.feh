@@ -155,6 +155,10 @@ class ClearInteractQueue implements ExternalQueue {
 		if( options.keyExists('open-errand-url') )
 			.SystemBaseURL = options['open-errand-url'];
 	}
+
+	static function finaliseActions() {
+		// Do nothing.
+	}
 	
 	static function addErrand( object errand, object user ) {
 		number itemId = (errand.externalID ? errand.externalID : -1);
@@ -224,7 +228,7 @@ class ClearInteractQueue implements ExternalQueue {
 		return false;
 	}
 	
-	static function removeErrand( object errand, number type ) {
+	static function removeErrand( object errand, number type, boolean wasOpenedByExternalSystem ) {
 		number itemId;
 		string reason;
 		switch( type ) {
