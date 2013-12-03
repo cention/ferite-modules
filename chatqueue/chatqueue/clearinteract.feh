@@ -1,0 +1,234 @@
+uses 'clearinteract';
+
+class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
+	function _assignAgent( object area ) {
+		object assignedAgent = null;
+
+		array list = Workflow.User.availableForChatList([ area.id ]);
+		if( list ) {
+			array possibleAgents = [];
+
+			if( F('chat.assign-to-highest-amount') ) {
+				number highestAmountOfAssignedChats = list[0]['count'];
+				list.each() using ( row ) {
+					if( row['count'] > highestAmountOfAssignedChats ) {
+						highestAmountOfAssignedChats = row['count'];
+					}
+				};
+
+				list.each() using ( row ) {
+					if( row['count'] == highestAmountOfAssignedChats ) {
+						possibleAgents[] = row['workflow_user_id'];
+					}
+				};
+			} else {
+				number lowestAmountOfAssignedChats = list[0]['count'];
+				list.each() using ( row ) {
+					if( row['count'] < lowestAmountOfAssignedChats ) {
+						lowestAmountOfAssignedChats = row['count'];
+					}
+				};
+				list.each() using ( row ) {
+					if( row['count'] == lowestAmountOfAssignedChats ) {
+						possibleAgents[] = row['workflow_user_id'];
+					}
+				};
+			}
+
+			if( possibleAgents ) {
+				number random = Math.randomNumber(0, possibleAgents.size() - 1);
+				assignedAgent = Workflow.User.load(possibleAgents[random]);
+			}
+		}
+
+		return assignedAgent;
+	}
+	function _requestResource( object area, object resource ) {
+		number itemId = -1;
+		string taskIdentifier = area.externalID;
+		string url = F('clearinteract.open-errand-url') + '/chat/answer/-/clearinteract/' + resource.id + '/update/[at_agent_id]';
+		string creationTime = Date.localDate(Date.GMTnow() + Date.timezone()).format('%F %H:%M');
+		return ClearInteract.queueCentionSession(itemId, taskIdentifier, url, creationTime);
+	}
+	function _cancelResource( object resource ) {
+		object user;
+		ClearInteract.endCentionSession(resource.itemID, 'Ended');
+		resource.setValue('active', false);
+		resource.save();
+		user = Workflow.User.byCurrentExternalChatSessionID(resource.itemID);
+		if( user ) {
+			user.setValue('currentExternalChatSessionID', 0);
+			user.save();
+		}
+	}
+	function _allocateAgent( object area ) {
+		object resource;
+		number itemID;
+
+		resource = new Workflow.ClearInteractAgentResource();
+		resource.setValue('systemgroup', .currentSystemGroup());
+		resource.save();
+
+		itemID = ._requestResource(area, resource);
+		if( itemID > 0 ) {
+			resource.setValue('active', true);
+			resource.setValue('itemID', itemID);
+			resource.save();
+			return true;
+		}
+
+		return false;
+	}
+	function _startChat( object chat, object user ) {
+		number itemId = -1;
+		number sessionItemId = user.currentExternalChatSessionID;
+		string errandId = 'chat/' + chat.id;
+		string area = chat.area.name + '/' + chat.area.id;
+		string channel = 'Chat';
+		string creationTime = Date.localDate(Date.GMTnow() + Date.timezone()).format('%F %H:%M');
+		number value = ClearInteract.stampCentionItemStarted(itemId, sessionItemId, errandId, area, channel, creationTime);
+		
+		chat.setValue('externalSessionID', user.currentExternalChatSessionID);
+		chat.setValue('externalID', value);
+		chat.setValue('queuedInExternal', (value > 0 ? true : false));
+		chat.setValue('status', Workflow.ChatSession.STATUS_STARTED);
+		chat.setValue('user', user);
+		chat.save();
+	}
+	function _endChat( object chat ) {
+		if( chat.queuedInExternal ) {
+			object user = Workflow.User.load(chat.user.id);
+			number itemID = ClearInteract.stampCentionItemEnded(chat.externalID, chat.externalSessionID, 'Ended');
+			if( itemID == chat.externalID ) {
+				chat.setValue('queuedInExternal', false);
+				chat.save();
+				return true;
+			}
+			return false;
+		}
+		return true;
+	}
+	function _closeSessions() {
+		array list = Workflow.User.withExternalChatSessionWithoutAssignedChat(.currentSystemGroup());
+		list.each() using ( row ) {
+			object user = Workflow.User.load(row['workflow_user_id']);
+			if( ClearInteract.endCentionSession(user.currentExternalChatSessionID, 'Ended') ) {
+				user.setValue('acceptChat', false);
+				user.setValue('currentExternalChatSessionID', 0);
+				user.save();
+			}
+		};
+	}
+	function _reportQueueLength( object area ) {
+		array chats = Workflow.ChatSession.unassignedList(area.id);
+		string taskIdentifier = area.externalID;
+		number queueLength = chats.size();
+		ClearInteract.reportQueueLength(taskIdentifier, queueLength);
+	}
+
+	function constructor {
+		ClearInteract.host = F('clearinteract.server-address');
+	}
+
+	function isOpen( object area ) {
+		// Always return true because if it is within the chat's
+		// opening hours there should always be agents working
+		// otherwise the clients should go in a queue.
+		return true;
+	}
+	function addChat( object chat ) {
+		object assignedAgent = ._assignAgent(chat.area);
+		if( assignedAgent ) {
+			._startChat(chat, assignedAgent);
+			._reportQueueLength(chat.area);
+			return true;
+		} else {
+			object unassignedResource = Workflow.ClearInteractAgentResource.currentUnassigned(.currentSystemGroup());
+			if( unassignedResource ) {
+				chat.setValue('status', Workflow.ChatSession.STATUS_WAITING_ON_AGENT);
+				chat.save();
+				._reportQueueLength(chat.area);
+				return true;
+			} else {
+				if( ._allocateAgent(chat.area) ) {
+					chat.setValue('status', Workflow.ChatSession.STATUS_WAITING_ON_AGENT);
+					chat.save();
+					._reportQueueLength(chat.area);
+					return true;
+				}
+			}
+		}
+
+		chat.setValue('status', Workflow.ChatSession.STATUS_FAILED_TO_ASSIGN_AGENT);
+		chat.setValue('active', false);
+		chat.save();
+
+		return false;
+	}
+
+	function endChat( object chat ) {
+		boolean result = ._endChat(chat);
+		.advanceQueue();
+		._reportQueueLength(chat.area);
+		return result;
+	}
+	function hangUpChat( object chat ) {
+		boolean result = ._endChat(chat);
+		.advanceQueue();
+		._reportQueueLength(chat.area);
+		return result;
+	}
+	function advanceQueue() {
+		array allAreaIDs = Workflow.SystemGroup.areasFromCache(.currentSystemGroup());
+		array availableUserIDs = Workflow.User.availableForChatList(allAreaIDs);
+		object nextChat;
+		object unassignedResource;
+
+		availableUserIDs.each() using ( userID ) {
+			object user = Workflow.User.load(userID['workflow_user_id']);
+			array areaIDs = Workflow.Area.idListByArrayForUser(allAreaIDs, user.id);
+			while( user.canBeAssignedMoreChat(.currentSystemGroup(), areaIDs) ) {
+				nextChat = Workflow.ChatSession.nextUnassignedChat(areaIDs);
+				if( nextChat ) {
+					._startChat(nextChat, user);
+					._reportQueueLength(nextChat.area);
+					continue;
+				}
+				break;
+			}
+		};
+
+		unassignedResource = Workflow.ClearInteractAgentResource.currentUnassigned(.currentSystemGroup());
+		nextChat = Workflow.ChatSession.nextUnassignedChat(allAreaIDs);
+		if( nextChat ) {
+			// At this point we know that we have at least one unassigned chat.
+			// What we do here is check if there is any agents which do not have
+			// chats assigned to them.
+			// This can happen because of two reasons.
+			// 1) Something is wrong with how we assign chats.
+			// 2) The agent is not allowed to take chats in the area in which the unassinged chat is.
+			// We are going to assume that it is 2) and that has happened.
+			// This means that we are going to close the session for all agents which does not
+			// currenly have a chat assigned to them.
+			._closeSessions();
+
+			if( not unassignedResource )
+				._allocateAgent(nextChat.area);
+
+			return false;
+		}
+
+		// If we get here we have assigned all chat requests.
+
+		// Check if we have an active resource request at Clear Interact.
+		// If we do we cancel that request since we have no need for another agent.
+		if( unassignedResource )
+			._cancelResource(unassignedResource);
+
+		// Close all user sessions for those agents which does not have a chat
+		// assigned to them.
+		._closeSessions();
+
+		return true;
+	}
+}

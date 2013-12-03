@@ -1,0 +1,94 @@
+class CentionChatQueue extends ChatQueue implements ChatQueueProtocol {
+	function _assignAgent( object area ) {
+		object assignedAgent = null;
+
+		array list = Workflow.User.availableForChatList([ area.id ]);
+		if( list ) {
+			array possibleAgents = [];
+
+			if( F('chat.assign-to-highest-amount') ) {
+				number highestAmountOfAssignedChats = list[0]['count'];
+				list.each() using ( row ) {
+					if( row['count'] > highestAmountOfAssignedChats ) {
+						highestAmountOfAssignedChats = row['count'];
+					}
+				};
+
+				list.each() using ( row ) {
+					if( row['count'] == highestAmountOfAssignedChats ) {
+						possibleAgents[] = row['workflow_user_id'];
+					}
+				};
+			} else {
+				number lowestAmountOfAssignedChats = list[0]['count'];
+				list.each() using ( row ) {
+					if( row['count'] < lowestAmountOfAssignedChats ) {
+						lowestAmountOfAssignedChats = row['count'];
+					}
+				};
+				list.each() using ( row ) {
+					if( row['count'] == lowestAmountOfAssignedChats ) {
+						possibleAgents[] = row['workflow_user_id'];
+					}
+				};
+			}
+			
+			if( possibleAgents ) {
+				number random = Math.randomNumber(0, possibleAgents.size() - 1);
+				assignedAgent = Workflow.User.load(possibleAgents[random]);
+			}
+		}
+
+		return assignedAgent;
+	}
+
+	function isOpen( object area ) {
+		return true;
+	}
+	function addChat( object chat ) {
+		object assignedAgent = ._assignAgent(chat.area);
+		if( assignedAgent ) {
+			chat.setValue('status', Workflow.ChatSession.STATUS_STARTED);
+			chat.setValue('user', assignedAgent);
+			chat.save();
+		} else {
+			chat.setValue('status', Workflow.ChatSession.STATUS_WAITING_ON_AGENT);
+			chat.save();
+		}
+		return true;
+	}
+	function endChat( object chat ) {
+		.advanceQueue();
+		return true;
+	}
+	function hangUpChat( object chat ) {
+		.advanceQueue();
+		return true;
+	}
+	function advanceQueue() {
+		array allAreaIDs = Workflow.SystemGroup.areasFromCache(.currentSystemGroup());
+		array availableUserIDs = Workflow.User.availableForChatList(allAreaIDs);
+		object nextChat;
+
+		availableUserIDs.each() using ( userID ) {
+			object user = Workflow.User.load(userID['workflow_user_id']);
+			array areaIDs = Workflow.Area.idListByArrayForUser(allAreaIDs, user.id);
+			while( user.canBeAssignedMoreChat(.currentSystemGroup(), areaIDs) ) {
+				nextChat = Workflow.ChatSession.nextUnassignedChat(areaIDs);
+				if( nextChat ) {
+					nextChat.setValue('status', Workflow.ChatSession.STATUS_STARTED);
+					nextChat.setValue('user', user);
+					nextChat.save();
+					continue;
+				}
+				break;
+			}
+		};
+
+		nextChat = Workflow.ChatSession.nextUnassignedChat(allAreaIDs);
+		if( nextChat )
+			return false;
+
+		return true;
+	}
+}
