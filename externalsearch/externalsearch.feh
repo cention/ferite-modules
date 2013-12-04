@@ -11,7 +11,6 @@ namespace ExternalSearchInterface {
 		if( not .initialised ) {
 			if( F('artificial-solutions') ) {
 				.interfaceImpl = new ArtificialSolutionsSearch();
-				//.interfaceImpl.baseURL = F('artificial-solutions.base-url');
 			}
 
 			.initialised = true;
