@@ -1,0 +1,40 @@
+protocol ExternalSearch {
+	function search( object rules, string text );
+	function templates( object rules );
+}
+
+namespace ExternalSearchInterface {
+	boolean initialised = false;
+	object interfaceImpl;
+
+	function initialise() {
+		if( not .initialised ) {
+			if( F('artificial-solutions') ) {
+				.interfaceImpl = new ArtificialSolutionsSearch();
+			}
+
+			.initialised = true;
+		}
+	}
+
+	function isEnabled() {
+		.initialise();
+		return (.interfaceImpl ? true : false);
+	}
+
+	function search( object rules, string text ) {
+		.initialise();
+		if( .interfaceImpl )
+			return .interfaceImpl.search(rules, text);
+		return [];
+	}
+
+	function templates( object rules ) {
+		.initialise();
+		if( .interfaceImpl )
+			return .interfaceImpl.templates(rules);
+		return [];
+	}
+}
+
+uses 'artificialsolutions.feh';
