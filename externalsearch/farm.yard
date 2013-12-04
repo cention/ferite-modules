@@ -1,0 +1,17 @@
+<?xml version="1.0" ?>
+<yard name="ExternalSearchInterface">
+
+	<property id="name" value="cention-externalsearch" />
+	<property id="version" value="3.2" />
+	
+	<collection id="externalsearch">
+		<list type="module">
+			<file name="externalsearch/externalsearch.feh" />
+			<file name="externalsearch/artificialsolutions.feh" />
+		</list>
+	</collection>
+
+	<phase id="install">
+		<copy source="externalsearch.module" target="$(FeriteModuleSourceDir)" maintainpath="true" />
+	</phase>
+</yard>
