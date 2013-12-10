@@ -18,9 +18,11 @@ class ArtificialSolutionsSearch implements ExternalSearch {
 	function login( object rules ) {
 		object http = Network.HTTP.get(rules.data1 + ArtificialSolutionsSearch.COMMAND_LOGIN);
 		object response = http.run();
+		object apache = Request.current();
+		
 		if( response.success() ) {
 			object data = JSON.parse(response.body().trim('()'));
-			object match = Regexp.match(';jsessionid=([A-z0-9])', data.responseData.applicationUrl);
+			object match = Regexp.match(';jsessionid=([A-z0-9]+)', data.responseData.applicationUrl);
 			if( match ) {
 				.jsessionid = match.capture(0);
 				return true;
@@ -56,24 +58,35 @@ class ArtificialSolutionsSearch implements ExternalSearch {
 		return list;
 	}
 
+	function _getTemplate( object rules, string subject ) {
+		object apache = Request.current();
+		string url = rules.data1 + ';jsessionid=' + .jsessionid + ArtificialSolutionsSearch.COMMAND_FIND_TEMPLATE + subject.urlEncode();
+		object http = Network.HTTP.get(url);
+		object response = http.run();
+
+		if( response.success() ) {
+			object data = JSON.parse(response.body().trim('()'));
+			return (apache ? apache.urlDecode(data.responseData.answer.urlDecode()) : data.responseData.answer);
+		}
+
+		return '';
+	}
+
 	function templates( object rules ) {
 		array list = [];
+		string url = rules.data1 + ArtificialSolutionsSearch.COMMAND_LIST_TEMPLATES;
+		object http = Network.HTTP.get(url);
+		object response = http.run();
+		
+		if( response.success() ) {
+			object apache = Request.current();
+			object data = JSON.parse(response.body().trim('()'));
+			string answer = (apache ? apache.urlDecode(data.responseData.answer.urlDecode()) : data.responseData.answer);
 
-		if( .login(rules) ) {
-			string url = rules.data1 + ';jsessionid=' + .jsessionid + ArtificialSolutionsSearch.COMMAND_LIST_TEMPLATES;
-			object http = Network.HTTP.get(url);
-			object response = http.run();
-
-			if( response.success() ) {
-				object apache = Request.current();
-				object data = JSON.parse(response.body().trim('()'));
-				string answer = (apache ? apache.urlDecode(data.responseData.answer.urlDecode()) : data.responseData.answer);
-				string subject = (answer.utf8Length() > 40 ? answer.utf8Slice(37) + '...' : answer);
-				list[] = [ 'id' => 1, 'subject' => subject, 'body' => answer, 'html_body' => '' ];
-			}
-
-			.logout(rules);
-		}
+			answer.toArray("\n").eachWithIndex() using ( subject, index ) {
+				list[] = [ 'id' => index + 1, 'subject' => subject, 'body' => ._getTemplate(rules, subject), 'html_body' => '' ];
+			};
+		};
 
 		return list;
 	}
