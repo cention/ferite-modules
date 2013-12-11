@@ -29,11 +29,15 @@ namespace ExternalSearchInterface {
 		return [];
 	}
 
-	function templates( object rules ) {
+	function templates( object rules, boolean useSecondarySource ) {
 		.initialise();
 		if( .interfaceImpl )
-			return .interfaceImpl.templates(rules);
+			return .interfaceImpl.templates(rules, useSecondarySource);
 		return [];
+	}
+
+	function templates( object rules ) {
+		return .templates(rules, false);
 	}
 }
 
