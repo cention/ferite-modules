@@ -10,7 +10,7 @@ class ArtificialSolutionsSearch implements ExternalSearch {
 	final static string COMMAND_SEARCH = '?command=request&viewname=STANDARDJSONP&userRole=agent&userinput=';
 	final static string COMMAND_SHORTCUT = '?command=shortcut&viewname=STANDARDJSONP&userRole=agent&userinput=';
 	final static string COMMAND_LIST_SHORTCUTS = '?command=list_shortcuts&viewname=STANDARDJSONP&userRole=agent';
-	final static string COMMAND_FIND_TEMPLATE = '?command=template&viewname=STANDARDJSONP&userRole=agent&userinput=';
+	final static string COMMAND_TEMPLATE = '?command=template&viewname=STANDARDJSONP&userRole=agent&userinput=';
 	final static string COMMAND_LIST_TEMPLATES = '?command=list_templates&viewname=STANDARDJSONP&userRole=agent&userinput=';
 
 	string jsessionid;
@@ -18,14 +18,20 @@ class ArtificialSolutionsSearch implements ExternalSearch {
 	function login( object rules ) {
 		object http = Network.HTTP.get(rules.data1 + ArtificialSolutionsSearch.COMMAND_LOGIN);
 		object response = http.run();
-		object apache = Request.current();
 		
 		if( response.success() ) {
-			object data = JSON.parse(response.body().trim('()'));
-			object match = Regexp.match(';jsessionid=([A-z0-9]+)', data.responseData.applicationUrl);
-			if( match ) {
-				.jsessionid = match.capture(0);
-				return true;
+			object data;
+			monitor {
+				data = JSON.parse(response.body().trim('()'));
+			} handle {
+				data = null;
+			}
+			if( data ) {
+				object match = Regexp.match(';jsessionid=([A-z0-9]+)', data.responseData.applicationUrl);
+				if( match ) {
+					.jsessionid = match.capture(0);
+					return true;
+				}
 			}
 		}
 		return false;
@@ -45,11 +51,18 @@ class ArtificialSolutionsSearch implements ExternalSearch {
 			object response = http.run();
 
 			if( response.success() ) {
-				object apache = Request.current();
-				object data = JSON.parse(response.body().trim('()'));
-				string answer = (apache ? apache.urlDecode(data.responseData.answer.urlDecode()) : data.responseData.answer);
-				string subject = (answer.utf8Length() > 40 ? answer.utf8Slice(37) + '...' : answer);
-				list[] = [ 'id' => 1, 'subject' => subject, 'body' => answer, 'html_body' => '' ];
+				object data;
+				monitor {
+					data = JSON.parse(response.body().trim('()'));
+				} handle {
+					data = null;
+				}
+				if( data ) {
+					object apache = Request.current();
+					string answer = (apache ? apache.urlDecode(data.responseData.answer.urlDecode()) : data.responseData.answer);
+					string subject = (answer.utf8Length() > 40 ? answer.utf8Slice(37) + '...' : answer);
+					list[] = [ 'id' => 1, 'subject' => subject, 'body' => answer, 'html_body' => '' ];
+				}
 			}
 
 			.logout(rules);
@@ -58,34 +71,52 @@ class ArtificialSolutionsSearch implements ExternalSearch {
 		return list;
 	}
 
-	function _getTemplate( object rules, string subject ) {
-		object apache = Request.current();
-		string url = rules.data1 + ';jsessionid=' + .jsessionid + ArtificialSolutionsSearch.COMMAND_FIND_TEMPLATE + subject.urlEncode();
+	function _getTemplate( object rules, string subject, boolean useSecondarySource ) {
+		string url = rules.data1 + ';jsessionid=' + .jsessionid + (useSecondarySource
+			? ArtificialSolutionsSearch.COMMAND_SHORTCUT
+			: ArtificialSolutionsSearch.COMMAND_TEMPLATE) + subject.urlEncode();
 		object http = Network.HTTP.get(url);
 		object response = http.run();
 
 		if( response.success() ) {
-			object data = JSON.parse(response.body().trim('()'));
-			return (apache ? apache.urlDecode(data.responseData.answer.urlDecode()) : data.responseData.answer);
+			object data;
+			monitor {
+				data = JSON.parse(response.body().trim('()'));
+			} handle {
+				data = null;
+			}
+			if( data ) {
+				object apache = Request.current();
+				return (apache ? apache.urlDecode(data.responseData.answer.urlDecode()) : data.responseData.answer);
+			}
 		}
 
 		return '';
 	}
 
-	function templates( object rules ) {
+	function templates( object rules, boolean useSecondarySource ) {
 		array list = [];
-		string url = rules.data1 + ArtificialSolutionsSearch.COMMAND_LIST_TEMPLATES;
+		string url = rules.data1 + (useSecondarySource
+			? ArtificialSolutionsSearch.COMMAND_LIST_SHORTCUTS
+			: ArtificialSolutionsSearch.COMMAND_LIST_TEMPLATES);
 		object http = Network.HTTP.get(url);
 		object response = http.run();
 		
 		if( response.success() ) {
-			object apache = Request.current();
-			object data = JSON.parse(response.body().trim('()'));
-			string answer = (apache ? apache.urlDecode(data.responseData.answer.urlDecode()) : data.responseData.answer);
+			object data;
+			monitor {
+				data = JSON.parse(response.body().trim('()'));
+			} handle {
+				data = null;
+			}
+			if( data ) {
+				object apache = Request.current();
+				string answer = (apache ? apache.urlDecode(data.responseData.answer.urlDecode()) : data.responseData.answer);
 
-			answer.toArray("\n").eachWithIndex() using ( subject, index ) {
-				list[] = [ 'id' => index + 1, 'subject' => subject, 'body' => ._getTemplate(rules, subject), 'html_body' => '' ];
-			};
+				answer.toArray("\n").eachWithIndex() using ( subject, index ) {
+					list[] = [ 'id' => index + 1, 'subject' => subject, 'body' => ._getTemplate(rules, subject, useSecondarySource), 'html_body' => '' ];
+				};
+			}
 		};
 
 		return list;
