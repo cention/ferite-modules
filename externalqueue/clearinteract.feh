@@ -29,8 +29,13 @@ namespace ClearInteract {
 		return SOAP.RPC.sendRequest(url, ' ' /* String with a space is correct */, message, body);
 	}
 	
-	function queueCentionItem( number ItemId, string taskIdentifier, string url, string errandId,
-		string area, string channel, string creationTime )
+	function queueCentionItem( number ItemId,
+	                           string taskIdentifier,
+	                           string url,
+	                           string errandId,
+	                           string area,
+	                           string channel,
+	                           string creationTime )
 	{
 		return .invoke(
 			"http://${.host}:${.port}/axis/services/UqfCention",
@@ -48,6 +53,32 @@ namespace ClearInteract {
 		);
 	}
 	
+	function queuePersonalCentionItem( number itemId,
+	                                   string taskIdentifier,
+	                                   string agentIdentifier,
+	                                   string url,
+	                                   string errandId,
+	                                   string area,
+	                                   string channel,
+	                                   string creationTime )
+	{
+		return .invoke(
+			"http://${.host}:${.port}/axis/services/UqfCention",
+			'queuePersonalCentionItem',
+			[
+				'itemId' => itemId,
+				'taskIdentifier' => taskIdentifier,
+				'agentIdentifier' => agentIdentifier,
+				'url' => url,
+				'errandId' => errandId,
+				'area' => area,
+				'channel' => channel,
+				'creationTime' => creationTime
+			],
+			'number'
+		);
+	}
+
 	function endCentionItem( number itemId, string reason ) {
 		return .invoke(
 			"http://${.host}:${.port}/axis/services/UqfCention",
@@ -101,6 +132,15 @@ namespace ClearInteract {
 			'number'
 		);
 	}
+
+	function reportQueueLength( string taskIdentifier, number queueLength ) {
+		return .invoke(
+			"http://${.host}:${.port}/axis/services/UqfCentionSession",
+			'reportQueueLength',
+			[ 'taskIdentifier' => taskIdentifier, 'queueLength' => queueLength ],
+			'number'
+		);
+	}
 }
 
 class ClearInteractQueue implements ExternalQueue {
@@ -121,21 +161,70 @@ class ClearInteractQueue implements ExternalQueue {
 	}
 	
 	static function addErrand( object errand, object user ) {
-		number itemId = ClearInteract.queueCentionItem(
-				errand.externalID,
-				errand.targetArea.externalID,
-				"${.SystemBaseURL}/workflow/-/external/open/${errand.id}",
-				'errand/' + errand.id,
-				errand.targetArea.name + '/' + errand.targetArea.id,
-				errand.service.name,
-				Date.localDate(errand.timestampArrive + Date.timezone()).format('%F %H:%M')
-			);
-		if( itemId > 0 ) {
+		number itemId = (errand.externalID ? errand.externalID : -1);
+		string taskIdentifier = errand.targetArea.externalID;
+		string agentIdentifier = (user ? user.externalID : '');
+		string url = "${.SystemBaseURL}/workflow/-/external/open/${errand.id}/update/[at_agent_id]";
+		string errandId = 'errand/' + errand.id;
+		string area = errand.targetArea.name + '/' + errand.targetArea.id;
+		string channel = errand.service.name;
+		string creationTime = Date.localDate(errand.timestampArrive + Date.timezone()).format('%F %H:%M');
+		number returnItemId;
+
+		if( user ) {
+			returnItemId = ClearInteract.queuePersonalCentionItem(itemId,
+			                                                      taskIdentifier,
+			                                                      agentIdentifier,
+			                                                      url,
+			                                                      errandId,
+			                                                      area,
+			                                                      channel,
+			                                                      creationTime);
+		} else {
+			returnItemId = ClearInteract.queueCentionItem(itemId,
+			                                              taskIdentifier,
+			                                              url,
+			                                              errandId,
+			                                              area,
+			                                              channel,
+			                                              creationTime);
+		}
+
+		if( returnItemId > 0 ) {
 			errand.setValue('queuedInExternal', true);
-			errand.setValue('externalID', itemId);
+			errand.setValue('externalID', returnItemId);
 			errand.save();
 			return true;
+		} else if( returnItemId == -8 ) {
+			// Because of how CI works the queueCentionItem request will fail when it is performed
+			// for Return to inbox, Forward to Agent and Forward to Area.
+			// This is because after the errand has been handled and endCentionItem has been sent 
+			// the agent which handled the errand goes into a post-handle state.
+			// The agent can be in this state from a couple of seconds to a couple of minutes.
+			// During this time CI consider the errand still allocated to the agent.
+			// This means that the re-queue attempt will fail.
+			// Whe handle this by saving the request parameters which can later
+			// be picked up by a background script that tries to re-run the request.
+			// Since that will eventually succeed true is returned here so that the code
+			// which calls this function treats it as a success.
+
+			object action = new Workflow.ClearInteractAction();
+			action.setValue('systemgroup', Workflow.SystemGroup.current());
+			action.setValue('type', Workflow.ClearInteractAction.ACTION_QUEUE_ITEM);
+			action.setValue('errand', errand);
+			action.setValue('itemId', itemId);
+			action.setValue('taskIdentifier', taskIdentifier);
+			action.setValue('agentIdentifier', agentIdentifier);
+			action.setValue('url', url);
+			action.setValue('errandId', errandId);
+			action.setValue('area', area);
+			action.setValue('channel', channel);
+			action.setValue('creationTime', creationTime);
+			action.save();
+
+			return true;
 		}
+
 		return false;
 	}
 	
@@ -163,7 +252,7 @@ class ClearInteractQueue implements ExternalQueue {
 	
 	static function pullErrand( object errand ) {
 		number itemId = ClearInteract.pullCentionItem(errand.externalID);
-		if( itemId == errand.externalID ) {
+		if( itemId == errand.externalID or itemId == -1 /* -1 = errand not in CI queue */ ) {
 			errand.setValue('queuedInExternal', false);
 			errand.save();
 			return true;
@@ -182,7 +271,7 @@ class ClearInteractQueue implements ExternalQueue {
 	static function assignChatAgent( object area ) {
 		object owner = null;
 
-		array list = Workflow.User.availableForChatList([ area_id ]);
+		array list = Workflow.User.availableForChatList([ area.id ]);
 		if( list ) {
 			array possibleOwners = [];
 
@@ -219,7 +308,7 @@ class ClearInteractQueue implements ExternalQueue {
 		if( not user ) {
 			number itemId = -1;
 			string taskIdentifier = chat.area.externalID;
-			string url = "${.SystemBaseURL}/admin/agents/edit/-/open/chat/${chat.id}";
+			string url = "${.SystemBaseURL}/chat/answer/-/open/${chat.id}/allow-deactivate/update-id/[at_agent_id]";
 			sessionItemId = ClearInteract.queueCentionSession(itemId, taskIdentifier, url, creationTime);
 			saveUser = false;
 		}
