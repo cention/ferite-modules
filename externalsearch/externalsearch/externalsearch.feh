@@ -1,6 +1,6 @@
 protocol ExternalSearch {
 	function search( object rules, string text );
-	function templates( object rules );
+	function templates( object rules, boolean useSecondarySource );
 }
 
 namespace ExternalSearchInterface {
