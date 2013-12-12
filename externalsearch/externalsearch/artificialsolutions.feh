@@ -1,8 +1,11 @@
 uses 'JSON';
+uses 'logger';
 uses 'network';
 uses 'cention_twitter'; // Need this for urlDecode() in String namespace.
 uses 'apache'; // Tobias 2013-12-02: WARNING! UGLY HACK!
                //                    NEED TO INCLUDE THIS FOR ANOTHER urlDecode() FUNCTION.
+uses 'cmail';
+uses 'MailUtilities';
 
 class ArtificialSolutionsSearch implements ExternalSearch {
 	final static string COMMAND_LOGIN = '?command=login&viewname=STANDARDJSONP&userRole=agent';
@@ -16,9 +19,15 @@ class ArtificialSolutionsSearch implements ExternalSearch {
 	string jsessionid;
 
 	function login( object rules ) {
-		object http = Network.HTTP.get(rules.data1 + ArtificialSolutionsSearch.COMMAND_LOGIN);
-		object response = http.run();
-		
+		string url = rules.data1 + ArtificialSolutionsSearch.COMMAND_LOGIN;
+		object http;
+		object response;
+
+		Logger.info('cention', "GET: ${url}");
+
+		http = Network.HTTP.get(url);
+		response = http.run();
+
 		if( response.success() ) {
 			object data;
 			monitor {
@@ -37,8 +46,12 @@ class ArtificialSolutionsSearch implements ExternalSearch {
 		return false;
 	}
 	function logout( object rules ) {
-		object http = Network.HTTP.get(rules.data1 + ArtificialSolutionsSearch.COMMAND_LOGOUT + ';jsessionid=' + .jsessionid);
-		object response = http.run();
+		string url = rules.data1 + ArtificialSolutionsSearch.COMMAND_LOGOUT + ';jsessionid=' + .jsessionid;
+		object http;
+		object response;
+		Logger.info('cention', "GET: ${url}");
+		http = Network.HTTP.get(url);
+		response = http.run();
 		return response.success();
 	}
 
@@ -47,8 +60,13 @@ class ArtificialSolutionsSearch implements ExternalSearch {
 
 		if( .login(rules) ) {
 			string url = rules.data1 + ';jsessionid=' + .jsessionid + ArtificialSolutionsSearch.COMMAND_SEARCH + text.urlEncode();
-			object http = Network.HTTP.get(url);
-			object response = http.run();
+			object http;
+			object response;
+
+			Logger.info('cention', "GET: ${url}");
+
+			http = Network.HTTP.get(url);
+			response = http.run();
 
 			if( response.success() ) {
 				object data;
@@ -72,11 +90,16 @@ class ArtificialSolutionsSearch implements ExternalSearch {
 	}
 
 	function _getTemplate( object rules, string subject, boolean useSecondarySource ) {
-		string url = rules.data1 + ';jsessionid=' + .jsessionid + (useSecondarySource
+		string url = rules.data1 + (.jsessionid ? ';jsessionid=' + .jsessionid : '') + (useSecondarySource
 			? ArtificialSolutionsSearch.COMMAND_SHORTCUT
 			: ArtificialSolutionsSearch.COMMAND_TEMPLATE) + subject.urlEncode();
-		object http = Network.HTTP.get(url);
-		object response = http.run();
+		object http;
+		object response;
+
+		Logger.info('cention', "GET: ${url}");
+
+		http = Network.HTTP.get(url);
+		response = http.run();
 
 		if( response.success() ) {
 			object data;
@@ -99,9 +122,14 @@ class ArtificialSolutionsSearch implements ExternalSearch {
 		string url = rules.data1 + (useSecondarySource
 			? ArtificialSolutionsSearch.COMMAND_LIST_SHORTCUTS
 			: ArtificialSolutionsSearch.COMMAND_LIST_TEMPLATES);
-		object http = Network.HTTP.get(url);
-		object response = http.run();
+		object http;
+		object response;
 		
+		Logger.info('cention', "GET: ${url}");
+
+		http = Network.HTTP.get(url);
+		response = http.run();
+
 		if( response.success() ) {
 			object data;
 			monitor {
