@@ -103,6 +103,11 @@ namespace Twitter {
 			curl.setOption(Curl.CURLOPT_URL, baseURI);
 			curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
 			//curl.setOption(Curl.CURLOPT_VERBOSE, 1);
+			/** Start:  For I386 machine its needed to add that **/
+			//curl.setOption(Curl.CURLOPT_HEADER, 1);
+			//curl.setOption(Curl.CURLOPT_POST, 1);
+			//curl.setOption(Curl.CURLOPT_SSL_VERIFYPEER, 0);
+			/** end **/
 			curl.setOption(Curl.CURLOPT_HTTPHEADER, header.join("\n"));
 			if( not curl.exec() ) {
 				raise new Error("Error when connecting to: ${baseURI}");
