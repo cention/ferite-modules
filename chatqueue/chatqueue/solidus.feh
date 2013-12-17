@@ -27,5 +27,6 @@ class SolidusChatQueue extends ChatQueue implements ChatQueueProtocol {
 	function advanceQueue() {
 		// Do nothing here.
 		// All logic to advance the queue is within the Solidus server.
+		return false;
 	}
 }
