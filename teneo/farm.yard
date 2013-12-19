@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<yard name="teneo">
+
+	<property id="name" value="cention-teneo" />
+	<property id="version" value="3.2" />
+	
+	<collection id="teneo">
+		<property type="prefix" value="$(FeriteModuleSourceDir)" />  
+
+		<list type="source">
+			<file name="teneo.feh" />
+		</list>
+	</collection>
+
+	<phase id="install">
+		<perform action="install" target="teneo" />
+	</phase>
+</yard>
