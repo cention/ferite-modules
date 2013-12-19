@@ -1,0 +1,161 @@
+uses 'JSON';
+uses 'logger';
+uses 'network';
+uses 'cention_twitter'; // Need this for urlDecode() in String namespace.
+uses 'apache'; // Tobias 2013-12-02: WARNING! UGLY HACK!
+               //                    NEED TO INCLUDE THIS FOR ANOTHER urlDecode() FUNCTION.
+uses 'cmail';
+uses 'MailUtilities';
+
+namespace Teneo {
+	final static string COMMAND_LOGIN = '?command=login&viewname=STANDARDJSONP&userRole=agent';
+	final static string COMMAND_LOGOUT = 'endsession';
+	final static string COMMAND_SEARCH = '?command=request&viewname=STANDARDJSONP&userRole=agent&userinput=';
+	final static string COMMAND_SHORTCUT = '?command=shortcut&viewname=STANDARDJSONP&userRole=agent&userinput=';
+	final static string COMMAND_LIST_SHORTCUTS = '?command=list_shortcuts&viewname=STANDARDJSONP&userRole=agent';
+	final static string COMMAND_TEMPLATE = '?command=template&viewname=STANDARDJSONP&userRole=agent&userinput=';
+	final static string COMMAND_LIST_TEMPLATES = '?command=list_templates&viewname=STANDARDJSONP&userRole=agent&userinput=';
+
+	string jsessionid;
+
+	function login( string baseURL ) {
+		string url = baseURL + Teneo.COMMAND_LOGIN;
+		object http;
+		object response;
+
+		Logger.info('cention', "GET: ${url}");
+
+		http = Network.HTTP.get(url);
+		response = http.run();
+
+		if( response.success() ) {
+			object data;
+			monitor {
+				data = JSON.parse(response.body().trim('()'));
+			} handle {
+				data = null;
+			}
+			if( data ) {
+				object match = Regexp.match(';jsessionid=([A-z0-9]+)', data.responseData.applicationUrl);
+				if( match ) {
+					.jsessionid = match.capture(0);
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	function logout( string baseURL ) {
+		string url = baseURL + Teneo.COMMAND_LOGOUT + ';jsessionid=' + .jsessionid;
+		object http;
+		object response;
+		Logger.info('cention', "GET: ${url}");
+		http = Network.HTTP.get(url);
+		response = http.run();
+		return response.success();
+	}
+
+	function search( string baseURL, string text ) {
+		array list = [];
+
+		if( .login(baseURL) ) {
+			string url = baseURL + ';jsessionid=' + .jsessionid + Teneo.COMMAND_SEARCH + text.urlEncode();
+			object http;
+			object response;
+
+			Logger.info('cention', "GET: ${url}");
+
+			http = Network.HTTP.get(url);
+			response = http.run();
+
+			if( response.success() ) {
+				object data;
+				monitor {
+					data = JSON.parse(response.body().trim('()'));
+				} handle {
+					data = null;
+				}
+				if( data ) {
+					object apache = Request.current();
+					string answer = (apache ? apache.urlDecode(data.responseData.answer.urlDecode()) : data.responseData.answer);
+					string subject = (answer.utf8Length() > 40 ? answer.utf8Slice(37) + '...' : answer);
+					list[] = [ 'id' => 1, 'subject' => subject, 'body' => answer, 'html_body' => '' ];
+				}
+			}
+
+			.logout(baseURL);
+		}
+
+		return list;
+	}
+
+	function get( string baseURL, string commandURL, string subject ) {
+		string url = baseURL + ';jsessionid=' + .jsessionid + commandURL + subject.urlEncode();
+		object http;
+		object response;
+
+		Logger.info('cention', "GET: ${url}");
+
+		http = Network.HTTP.get(url);
+		response = http.run();
+
+		if( response.success() ) {
+			object data;
+			monitor {
+				data = JSON.parse(response.body().trim('()'));
+			} handle {
+				data = null;
+			}
+			if( data ) {
+				object apache = Request.current();
+				return (apache ? apache.urlDecode(data.responseData.answer.urlDecode()) : data.responseData.answer);
+			}
+		}
+
+		return '';
+	}
+
+	function list( string baseURL, string listCommandURL, string getCommandURL ) {
+		array list = [];
+
+		if( .login(baseURL) ) {
+			string url = baseURL + ';jsessionid=' + .jsessionid + listCommandURL;
+			object http;
+			object response;
+			
+			Logger.info('cention', "GET: ${url}");
+
+			http = Network.HTTP.get(url);
+			response = http.run();
+
+			if( response.success() ) {
+				object data;
+				monitor {
+					data = JSON.parse(response.body().trim('()'));
+				} handle {
+					data = null;
+				}
+				if( data ) {
+					object apache = Request.current();
+					string answer = (apache ? apache.urlDecode(data.responseData.answer.urlDecode()) : data.responseData.answer);
+
+					answer.toArray("\n").eachWithIndex() using ( subject, index ) {
+						list[] = [ 'id' => index + 1, 'subject' => subject, 'body' => .get(baseURL, getCommandURL, subject), 'html_body' => '' ];
+					};
+				}
+			}
+
+			.logout(baseURL);
+		}
+
+		return list;
+	}
+
+	function templates( string baseURL ) {
+		return .list(baseURL, Teneo.COMMAND_LIST_TEMPLATES, Teneo.COMMAND_TEMPLATE);
+	}
+
+	function shortcuts( string baseURL ) {
+		return .list(baseURL, Teneo.COMMAND_LIST_SHORTCUTS, Teneo.COMMAND_SHORTCUT);
+	}
+};
