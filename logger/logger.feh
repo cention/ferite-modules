@@ -65,7 +65,7 @@ namespace Logger {
 	 * @variable APPLICATION_SOLIDUS
 	 * @type string
 	 */
-	string APPLICATION_SOLIDUS = 'cention-update';
+	string APPLICATION_SOLIDUS = 'cention-solidus';
 	
 	array loggers;
 	function getLogger( string app ) {
