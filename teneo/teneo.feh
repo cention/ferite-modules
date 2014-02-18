@@ -11,10 +11,10 @@ namespace Teneo {
 	final static string COMMAND_LOGIN = '?command=login&viewname=STANDARDJSONP&userRole=agent';
 	final static string COMMAND_LOGOUT = 'endsession';
 	final static string COMMAND_SEARCH = '?command=request&viewname=STANDARDJSONP&userRole=agent&userinput=';
-	final static string COMMAND_SHORTCUT = '?command=shortcut&viewname=STANDARDJSONP&userRole=agent&userinput=';
-	final static string COMMAND_LIST_SHORTCUTS = '?command=list_shortcuts&viewname=STANDARDJSONP&userRole=agent';
-	final static string COMMAND_TEMPLATE = '?command=template&viewname=STANDARDJSONP&userRole=agent&userinput=';
-	final static string COMMAND_LIST_TEMPLATES = '?command=list_templates&viewname=STANDARDJSONP&userRole=agent&userinput=';
+	final static string COMMAND_SHORTCUT = '?command=shortcut&viewname=STANDARDJSONP&artisolcmd_stats=ignoretransaction&userRole=agent&userinput=';
+	final static string COMMAND_LIST_SHORTCUTS = '?command=list_shortcuts&viewname=STANDARDJSONP&artisolcmd_stats=ignoretransaction&userRole=agent';
+	final static string COMMAND_TEMPLATE = '?command=template&viewname=STANDARDJSONP&artisolcmd_stats=ignoretransaction&userRole=agent&userinput=';
+	final static string COMMAND_LIST_TEMPLATES = '?command=list_templates&viewname=STANDARDJSONP&artisolcmd_stats=ignoretransaction&userRole=agent&userinput=';
 
 	string jsessionid;
 
