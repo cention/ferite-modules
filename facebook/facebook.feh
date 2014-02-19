@@ -159,5 +159,15 @@ namespace Facebook {
 		graph.method = method;
 		return graph;
 	}
+	function getUrlContent( string url ){
+		object curl = new Curl.Curl();
+		curl.setOption(Curl.CURLOPT_URL, url);
+		curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
+		curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
+		if( curl.exec() ) {
+			return curl.getContent();
+		}else
+			raise new Error("Error when connecting to: ${url}");	
+	}
 }
 
