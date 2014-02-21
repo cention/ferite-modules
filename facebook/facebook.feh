@@ -130,7 +130,9 @@ namespace Facebook {
 					// data is defined at the top of the run function
 					data = JSON.parse(content);
 				} handle {
-					raise new Error("Error when parsing response: ${content}");
+					/*Mujibur: Feb 21, 2014 - Facebook Api was providing wrong response. We expect JSON response but its giving only ID. So we stoped it right now.*/
+					/*raise new Error("Error when parsing response: ${content}");*/
+					return content;
 				}
 			} else {
 				raise new Error("Error when connecting to: ${url}");
