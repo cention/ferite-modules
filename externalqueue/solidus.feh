@@ -1,5 +1,6 @@
 uses 'externalqueue';
 uses 'logger';
+uses 'math';
 uses 'SOAP';
 
 class AddRequestResult {
@@ -64,6 +65,20 @@ namespace Solidus {
 		.soapActionURL = soapActionURL;
 	}
 
+	function debugID() {
+		Math.srand(Sys.timestamp());
+		return Math.randomNumber(1000, 9999);
+	}
+	function getErrorReason( string error ) {
+		object match = Regexp.match('\[Detail: (.*?)\]', error);
+		if( match )
+			return match.capture(0);
+		match = Regexp.match('\[Reason: (.*?)\]', error);
+		if( match )
+			return match.capture(0);
+		return error;
+	}
+
 	function sendRequest( string url, string action, string f, array parameters, string result, string resultName ) {
 		array body = [ "${f}Response" => [ "${resultName}" => result ] ];
 		string message;
@@ -108,6 +123,11 @@ namespace Solidus {
 	                     number typeOfSession )
 	{
 		object result;
+		number debugID = .debugID();
+
+		Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) (AddRequest) (   Run) " +
+			"ForceToPreferredAgent: ${forceToPreferredAgent}, IVRInfo: ${ivrInfo}, PreferredAgentID: ${preferredAgentID}, " +
+			"PrivateData: ${privateData}, ServiceGroupID: ${serviceGroupID}, ServiceGroupName: , TenantID: -1");
 
 		monitor {
 			array parameters;
@@ -142,8 +162,11 @@ namespace Solidus {
 					'AddRequestResult'
 				);
 		} handle {
+			Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) (AddRequest) ( Error) " + .getErrorReason(err.str));
 			result = null;
 		}
+
+		Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) (AddRequest) (Result) " + (result ? result.toString() : "null"));
 
 		return result;
 	}
@@ -156,6 +179,10 @@ namespace Solidus {
 	}
 	function cancelRequest( number openMediaID, boolean cancelIfAllocated, boolean doNotReport ) {
 		boolean result;
+		number debugID = .debugID();
+
+		Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) (CancelRequest) (   Run) " +
+			"CancelIfAllocated: ${cancelIfAllocated}, DoNotReport: ${doNotReport}, OpenMediaID: ${openMediaID}");
 
 		monitor {
 			array parameters;
@@ -173,14 +200,20 @@ namespace Solidus {
 				'CancelRequestResult'
 			);
 		} handle {
+			Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) (CancelRequest) ( Error) " + .getErrorReason(err.str));
 			result = false;
 		}
+
+		Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) (CancelRequest) (Result) ${result}");
 
 		return result;
 	}
 
 	function getOpenMediaRequestStatus( number openMediaID ) {
 		object result;
+		number debugID = .debugID();
+
+		Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) (GetOpenMediaRequestStatusByID) (   Run) openMediaID: ${openMediaID}");
 
 		monitor {
 			array parameters;
@@ -196,14 +229,20 @@ namespace Solidus {
 				'GetOpenMediaRequestStatusByIDResult'
 			);
 		} handle {
+			Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) (GetOpenMediaRequestStatusByID) ( Error) " + .getErrorReason(err.str));
 			result = null;
 		}
+
+		Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) (GetOpenMediaRequestStatusByID) (Result) " + (result ? result.toString() : "null"));
 
 		return result;
 	}
 
 	function getServiceGroupStatus( number serviceGroupID ) {
 		object result;
+		number debugID = .debugID();
+
+		Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) (GetServiceGroupStatus) (   Run) serviceGroupID: ${serviceGroupID}");
 
 		monitor {
 			array parameters = [];
@@ -219,14 +258,20 @@ namespace Solidus {
 					'GetServiceGroupStatusResult'
 				);
 		} handle {
+			Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) (GetServiceGroupStatus) ( Error) " + .getErrorReason(err.str));
 			result = null;
 		}
+
+		Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) (GetServiceGroupStatus) (Result) " + (result ? result.toString() : "null"));
 
 		return result;
 	}
 
 	function getOMAgentsByGroup( number serviceGroupID ) {
 		object result;
+		number debugID = .debugID();
+
+		Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) (GetOMAgentsByGroup) (   Run) serviceGroupID: ${serviceGroupID}");
 
 		monitor {
 			array parameters = [];
@@ -242,8 +287,11 @@ namespace Solidus {
 					'GetOMAgentsByGroupResult'
 				);
 		} handle {
+			Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) GetOMAgentsByGroup ( Error) " + .getErrorReason(err.str));
 			result = null;
 		}
+
+		Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) GetOMAgentsByGroup (Result) " + (result ? result.toString() : "null"));
 
 		return result;
 	}
@@ -256,6 +304,11 @@ namespace Solidus {
 	                     boolean resetAllOptions )
 	{
 		boolean result;
+		number debugID = .debugID();
+
+		Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) (SetOptions) (   Run) " +
+			"AgentActionOptions: ${agentActionOptions}, AllowDifferentTypes: ${allowDifferentTypes}, CloseTabOptions: ${closeTabOptions}, " +
+			"MaxNumberOfSessions: ${maxNumberOfSessions}, ResetAllOptions: ${resetAllOptions}, TypeOfSession: ${typeOfSession}");
 
 		monitor {
 			array parameters = [];
@@ -274,8 +327,11 @@ namespace Solidus {
 			                      'boolean',
 			                      'SetOptionsResult');
 		} handle {
-				result = false;
+			Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) (SetOptions) ( Error) " + .getErrorReason(err.str));
+			result = false;
 		}
+
+		Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) (SetOptions) (Result) ${result}");
 
 		return result;
 	}
@@ -427,8 +483,8 @@ class SolidusQueue implements ExternalQueue {
 					} else {
 						Logger.info(Logger.APPLICATION_SOLIDUS, "Unable to cancel errand ${errand.id} (${errand.solidusOpenMediaID}) in Solidus");
 					}
-				} else if( status.OpenMediaRequests[0].Status == 'Complete' /* Completed */ ) {
-					Logger.info(Logger.APPLICATION_SOLIDUS, "Status in Solidus for errand ${errand.id} (${errand.solidusOpenMediaID}) is 'Completed'");
+				} else if( status.OpenMediaRequests[0].Status == 'Complete' /* Completed */ or status.OpenMediaRequests[0].Status == 'Cancelled' ) {
+					Logger.info(Logger.APPLICATION_SOLIDUS, "Status in Solidus for errand ${errand.id} (${errand.solidusOpenMediaID}) is '${status.OpenMediaRequests[0].Status}'");
 					failed = false;
 					errand.setValue('queuedInExternal', false);
 					errand.setValue('solidusOpenMediaID', 0);
@@ -600,18 +656,61 @@ class SolidusQueue implements ExternalQueue {
 	}
 
 	static function removeChat( object chat ) {
-		object channelSetting = Workflow.SolidusChannelSetting.byChannel(chat.systemGroup, Workflow.Errand.SERVICE_CHAT);
-		channelSetting and ._setOptions(channelSetting);
-		Solidus.cancelRequest(chat.externalID, true);
+		object status;
+
+		Logger.info(Logger.APPLICATION_SOLIDUS, "Cancel request should be sent for Workflow.ChatSession(${chat.id}) (${chat.externalID}).");
+		Logger.info(Logger.APPLICATION_SOLIDUS, "Fetching status in Solidus for Workflow.ChatSession(${chat.id}) (${chat.externalID}).");
+		
+		status = Solidus.getOpenMediaRequestStatus(chat.externalID);
+		if( status and status.OpenMediaRequests ) {
+			Logger.info(Logger.APPLICATION_SOLIDUS, "The status for Workflow.ChatSession(${chat.id}) (${chat.externalID}) in Solidus is" +
+				" '${status.OpenMediaRequests[0].Status}'.");
+
+			if( status.OpenMediaRequests[0].Status == 'AgentProcessing' ) {
+				object channelSetting = Workflow.SolidusChannelSetting.byChannel(chat.systemGroup, Workflow.Errand.SERVICE_CHAT);
+				channelSetting and ._setOptions(channelSetting);
+
+				Logger.info(Logger.APPLICATION_SOLIDUS, "Sending cancel request for Workflow.ChatSession(${chat.id}) (${chat.externalID}).");
+				
+				if( not Solidus.cancelRequest(chat.externalID, true) ) {
+					object action;
+					Logger.info(Logger.APPLICATION_SOLIDUS, "Cancel request returned false for Workflow.ChatSession(${chat.id}) (${chat.externalID}).");
+					action = new Workflow.SolidusCancelRequestAction();
+					action.setValue('openMediaID', chat.externalID);
+					action.setValue('cancelIfAllocated', true);
+					action.save();
+				} else {
+					Logger.info(Logger.APPLICATION_SOLIDUS, "Cancel request returned true for Workflow.ChatSession(${chat.id}) (${chat.externalID}).");
+				}
+			} else {
+				Logger.info(Logger.APPLICATION_SOLIDUS, "The status for Workflow.ChatSession(${chat.id}) (${chat.externalID}) in Solidus is not " +
+					"'AgentProcessing' - ignoring cancel request.");
+			}
+		} else {
+			Logger.info(Logger.APPLICATION_SOLIDUS, "Solidus did not return any status for Workflow.ChatSession(${chat.id}) (${chat.externalID}) " +
+				"- ignoring cancel request.");
+		}
+
 		chat.setValue('queuedInExternal', false);
 		chat.save();
+
 		return true;
 	}
 
 	static function forwardChatToAgent( object chat, object user ) {
 		number oldExternalID = chat.externalID;
 		if( ._addChat(chat, user, user.solidusLastKnownValidServiceGroupID) ) {
-			Solidus.cancelRequest(oldExternalID, true);
+			Logger.info(Logger.APPLICATION_SOLIDUS, "Sending cancel request for Workflow.ChatSession(${chat.id}) (${oldExternalID}).");
+			if( not Solidus.cancelRequest(oldExternalID, true) ) {
+				object action;
+				Logger.info(Logger.APPLICATION_SOLIDUS, "Cancel request returned false for Workflow.ChatSession(${chat.id}) (${oldExternalID}).");
+				action = new Workflow.SolidusCancelRequestAction();
+				action.setValue('openMediaID', oldExternalID);
+				action.setValue('cancelIfAllocated', true);
+				action.save();
+			} else {
+				Logger.info(Logger.APPLICATION_SOLIDUS, "Cancel request returned true for Workflow.ChatSession(${chat.id}) (${oldExternalID}).");
+			}
 			return true;
 		}
 		return false;
