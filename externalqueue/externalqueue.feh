@@ -43,6 +43,7 @@ namespace ExternalQueueInterface {
 			ExternalQueueInterface.enable(SolidusQueue);
 			SolidusQueue.configure([
 				'server-address' => (F('solidus.server-address') ? F('solidus.server-address') : ''),
+				'soap-action-url' => (F('solidus.soap-action-url') ? F('solidus.soap-action-url') : ''),
 				'open-errand-url' => (F('solidus.open-errand-url') ? F('solidus.open-errand-url') : '')
 			]);
 		}

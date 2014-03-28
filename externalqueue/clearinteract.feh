@@ -208,7 +208,7 @@ class ClearInteractQueue implements ExternalQueue {
 			// which calls this function treats it as a success.
 
 			object action = new Workflow.ClearInteractAction();
-			action.setValue('systemgroup', Workflow.SystemGroup.current());
+			action.setValue('systemgroup', Workflow.SystemGroup.minimalByAreaID(errand.targetArea.id).id);
 			action.setValue('type', Workflow.ClearInteractAction.ACTION_QUEUE_ITEM);
 			action.setValue('errand', errand);
 			action.setValue('itemId', itemId);

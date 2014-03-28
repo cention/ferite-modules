@@ -73,7 +73,7 @@ namespace Solidus {
 		message += ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"';
 		message += ' xmlns:xsd="http://www.w3.org/2001/XMLSchema">';
 		message += '<soap:Body>';
-		message += "<${f} xmlns=\"${.soapActionURL}/\">";
+		message += "<${f} xmlns=\"http://tempuri.org/\">";
 
 		if( f != 'GetOpenMediaRequestStatusByID' and f != 'GetServiceGroupStatus' and f != 'GetOMAgentsByGroup' )
 			message += '<request>';
@@ -134,8 +134,8 @@ namespace Solidus {
 			};
 
 			result = .sendRequest(
-					.serverAddress + '/OpenMediaService',
-					.soapActionURL + '/IOpenMediaService/AddRequest',
+					.serverAddress,
+					.soapActionURL + '/AddRequest',
 					'AddRequest',
 					parameters,
 					'AddRequestResult',
@@ -165,8 +165,8 @@ namespace Solidus {
 			parameters['OpenMediaID'] = openMediaID;
 
 			result = .sendRequest(
-				.serverAddress + '/OpenMediaService',
-				.soapActionURL + '/IOpenMediaService/CancelRequest',
+				.serverAddress,
+				.soapActionURL + '/CancelRequest',
 				'CancelRequest',
 				parameters,
 				'boolean',
@@ -188,8 +188,8 @@ namespace Solidus {
 			parameters['openMediaID'] = openMediaID;
 
 			result = .sendRequest(
-				.serverAddress + '/OpenMediaService',
-				.soapActionURL + '/IOpenMediaService/GetOpenMediaRequestStatusByID',
+				.serverAddress,
+				.soapActionURL + '/GetOpenMediaRequestStatusByID',
 				'GetOpenMediaRequestStatusByID',
 				parameters,
 				'GetOpenMediaRequestStatusByIDResult',
@@ -211,8 +211,8 @@ namespace Solidus {
 			parameters['serviceGroupID'] = serviceGroupID;
 
 			result = .sendRequest(
-					.serverAddress + '/OpenMediaService',
-					.soapActionURL + '/IOpenMediaService/GetServiceGroupStatus',
+					.serverAddress,
+					.soapActionURL + '/GetServiceGroupStatus',
 					'GetServiceGroupStatus',
 					parameters,
 					'GetServiceGroupStatusResult',
@@ -234,8 +234,8 @@ namespace Solidus {
 			parameters['serviceGroupID'] = serviceGroupID;
 
 			result = .sendRequest(
-					.serverAddress + '/OpenMediaService',
-					.soapActionURL + '/IOpenMediaService/GetOMAgentsByGroup',
+					.serverAddress,
+					.soapActionURL + '/GetOMAgentsByGroup',
 					'GetOMAgentsByGroup',
 					parameters,
 					'GetOMAgentsByGroupResult',
@@ -267,8 +267,8 @@ namespace Solidus {
 			parameters['ResetAllOptions'] = resetAllOptions;
 			parameters['TypeOfSession'] = typeOfSession;
 
-			result = .sendRequest(.serverAddress + '/OpenMediaService',
-			                      .soapActionURL + '/IOpenMediaService/SetOptions',
+			result = .sendRequest(.serverAddress,
+			                      .soapActionURL + '/SetOptions',
 			                      'SetOptions',
 			                      parameters,
 			                      'boolean',
@@ -293,8 +293,8 @@ class SolidusQueue implements ExternalQueue {
 		return 'solidus';
 	}
 	static function configure( array options ) {
-		if( options.keyExists('server-address') )
-			Solidus.setDefaults(options['server-address'], 'http://tempuri.org');
+		if( options.keyExists('server-address') and options.keyExists('soap-action-url') )
+			Solidus.setDefaults(options['server-address'], options['soap-action-url']);
 		if( options.keyExists('open-errand-url') )
 			.SystemBaseURL = options['open-errand-url'];
 	}
