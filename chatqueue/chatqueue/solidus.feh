@@ -2,7 +2,7 @@ uses '/cention/lib/ferite/module-source/solidus.feh';
 
 class SolidusChatQueue extends ChatQueue implements ChatQueueProtocol {
 	function constructor {
-		Solidus.setDefaults(F('solidus.server-address'), 'http://tempuri.org');
+		Solidus.setDefaults(F('solidus.server-address'), F('solidus.soap-action-url'));
 		SolidusQueue.SystemBaseURL = F('solidus.open-errand-url');
 	}
 
