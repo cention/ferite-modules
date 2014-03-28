@@ -130,7 +130,9 @@ namespace Facebook {
 					// data is defined at the top of the run function
 					data = JSON.parse(content);
 				} handle {
-					raise new Error("Error when parsing response: ${content}");
+					/*Mujibur: Feb 21, 2014 - Facebook Api was providing wrong response. We expect JSON response but its giving only ID. So we stoped it right now.*/
+					/*raise new Error("Error when parsing response: ${content}");*/
+					return content;
 				}
 			} else {
 				raise new Error("Error when connecting to: ${url}");
@@ -158,6 +160,16 @@ namespace Facebook {
 		graph.path = path;
 		graph.method = method;
 		return graph;
+	}
+	function getUrlContent( string url ){
+		object curl = new Curl.Curl();
+		curl.setOption(Curl.CURLOPT_URL, url);
+		curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
+		curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
+		if( curl.exec() ) {
+			return curl.getContent();
+		}else
+			raise new Error("Error when connecting to: ${url}");	
 	}
 }
 
