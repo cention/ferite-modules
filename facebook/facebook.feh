@@ -44,7 +44,8 @@ namespace Facebook {
 			curl.setOption(Curl.CURLOPT_URL, url);
 			curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
 			curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
-			
+			curl.setOption(Curl.CURLOPT_SSL_VERIFYPEER, 0);
+
 			if( curl.exec() ) {
 				string content = curl.getContent();
 				
@@ -120,6 +121,7 @@ namespace Facebook {
 			curl.setOption(Curl.CURLOPT_URL, url);
 			curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
 			curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
+			curl.setOption(Curl.CURLOPT_SSL_VERIFYPEER, 0);
 			
 			if( curl.exec() ) {
 				string content = curl.getContent();
