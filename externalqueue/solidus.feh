@@ -451,6 +451,10 @@ class SolidusQueue implements ExternalQueue {
 		return (not failed);
 	}
 
+	static function neutralForwardErrandToAgent() {
+		return true;
+	}
+
 	static function chatAgentsAvailable( object area ) {
 		object result = Solidus.getServiceGroupStatus(area.solidusServiceGroupID);
 		if( result and result.Open )
