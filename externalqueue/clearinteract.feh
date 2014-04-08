@@ -260,6 +260,10 @@ class ClearInteractQueue implements ExternalQueue {
 		return false;
 	}
 
+	static function neutralForwardErrandToAgent() {
+		return false;
+	}
+
 	static function chatAgentsAvailable( object area ) {
 		/* Tobias 2013-06-14: When using the system with Clear Interact we always
 		                      say that there are agents available because CI puts
