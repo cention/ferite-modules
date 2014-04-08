@@ -5,6 +5,7 @@ protocol ExternalQueue {
 	static function addErrand( object errand, object user );
 	static function removeErrand( object errand, number type, boolean wasOpenedByExternalSystem );
 	static function pullErrand( object errand);
+	static function neutralForwardErrandToAgent();
 	static function chatAgentsAvailable( object area );
 	static function getChatAgents( object area );
 	static function assignChatAgent( object area );
@@ -69,6 +70,9 @@ namespace ExternalQueueInterface {
 	}
 	function pullErrand( object errand ) {
 		return .queue.pullErrand(errand);
+	}
+	function neutralForwardErrandToAgent() {
+		return .queue.neutralForwardErrandToAgent();
 	}
 	function chatAgentsAvailable( object area ) {
 		return .queue.chatAgentsAvailable(area);
