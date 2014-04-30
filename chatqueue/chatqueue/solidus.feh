@@ -2,29 +2,35 @@ uses '/cention/lib/ferite/module-source/solidus.feh';
 
 class SolidusChatQueue extends ChatQueue implements ChatQueueProtocol {
 	function constructor {
-		Solidus.setDefaults(F('solidus.server-address'), 'http://tempuri.org');
+		.log('(Solidus) Invoking: constructor');
+		Solidus.setDefaults(F('solidus.server-address'), F('solidus.soap-action-url'));
 		SolidusQueue.SystemBaseURL = F('solidus.open-errand-url');
 	}
 
 	function isOpen( object area ) {
+		.log('(Solidus) Invoking: isOpen');
 		if( SolidusQueue.chatAgentsAvailable(area) )
 			return true;
 		return false;
 	}
 
 	function addChat( object chat ) {
+		.log('(Solidus) Invoking: addChat');
 		return SolidusQueue.addChat(chat);
 	}
 
 	function endChat( object chat ) {
+		.log('(Solidus) Invoking: endChat');
 		return SolidusQueue.removeChat(chat);
 	}
 
 	function hangUpChat( object chat ) {
+		.log('(Solidus) Invoking: hangUpChat');
 		return SolidusQueue.removeChat(chat);
 	}
 
 	function advanceQueue() {
+		.log('(Solidus) Invoking: advanceQueue');
 		// Do nothing here.
 		// All logic to advance the queue is within the Solidus server.
 		return false;

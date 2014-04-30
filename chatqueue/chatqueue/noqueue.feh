@@ -1,10 +1,19 @@
 class NoChatQueue extends ChatQueue implements ChatQueueProtocol {
+	function constructor {
+		.log('(NoQueue) Invoking: constructor');
+	}
 	function isOpen( object area ) {
-		array list = Workflow.User.availableForChatList([ area.id ]);
+		array list;
+		.log('(NoQueue) Invoking: isOpen');
+		list = Workflow.User.availableForChatList([ area.id ]);
 		return (list ? true : false);
 	}
 	function addChat( object chat ) {
-		array list = Workflow.User.availableForChatList([ chat.area.id ]);
+		array list;
+		
+		.log('(NoQueue) Invoking: addChat');
+
+		list = Workflow.User.availableForChatList([ chat.area.id ]);
 		if( list ) {
 			object assignedAgent = null;
 			array possibleAgents= [];
@@ -56,8 +65,20 @@ class NoChatQueue extends ChatQueue implements ChatQueueProtocol {
 
 		return false;
 	}
-	function endChat( object chat ) return true;
-	function hangUpChat( object chat ) return true;
-	function acceptChat( object user ) return true;
-	function advanceQueue() return false;
+	function endChat( object chat ) {
+		.log('(NoQueue) Invoking: endChat');
+		return true;
+	}
+	function hangUpChat( object chat ) {
+		.log('(NoQueue) Invoking: hangUpChat');
+		return true;
+	}
+	function acceptChat( object user ) {
+		.log('(NoQueue) Invoking: acceptChat');
+		return true;
+	}
+	function advanceQueue() {
+		.log('(NoQueue) Invoking: advanceQueue');
+		return false;
+	}
 }

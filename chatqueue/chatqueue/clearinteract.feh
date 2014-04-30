@@ -127,17 +127,21 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 	}
 
 	function constructor {
+		.log('(ClearInteract) Invoking: constructor');
 		ClearInteract.host = F('clearinteract.server-address');
 	}
 
 	function isOpen( object area ) {
+		.log('(ClearInteract) Invoking: isOpen');
 		// Always return true because if it is within the chat's
 		// opening hours there should always be agents working
 		// otherwise the clients should go in a queue.
 		return true;
 	}
 	function addChat( object chat ) {
-		object assignedAgent = ._assignAgent(chat.area);
+		object assignedAgent;
+		.log('(ClearInteract) Invoking: addChat');
+		assignedAgent = ._assignAgent(chat.area);
 		if( assignedAgent ) {
 			._startChat(chat, assignedAgent);
 			._reportQueueLength(chat.area);
@@ -167,22 +171,31 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 	}
 
 	function endChat( object chat ) {
-		boolean result = ._endChat(chat);
+		boolean result;
+		.log('(ClearInteract) Invoking: endChat');
+		result = ._endChat(chat);
 		.advanceQueue();
 		._reportQueueLength(chat.area);
 		return result;
 	}
 	function hangUpChat( object chat ) {
-		boolean result = ._endChat(chat);
+		boolean result;
+		.log('(ClearInteract) Invoking: hangUpChat');
+		result = ._endChat(chat);
 		.advanceQueue();
 		._reportQueueLength(chat.area);
 		return result;
 	}
 	function advanceQueue() {
-		array allAreaIDs = Workflow.SystemGroup.areasFromCache(.currentSystemGroup());
-		array availableUserIDs = Workflow.User.availableForChatList(allAreaIDs);
+		array allAreaID;
+		array availableUserIDs;
 		object nextChat;
 		object unassignedResource;
+
+		.log('(ClearInteract) Invoking: advanceQueue');
+
+		allAreaIDs = Workflow.SystemGroup.areasFromCache(.currentSystemGroup());
+		availableUserIDs = Workflow.User.availableForChatList(allAreaIDs);
 
 		availableUserIDs.each() using ( userID ) {
 			object user = Workflow.User.load(userID['workflow_user_id']);
