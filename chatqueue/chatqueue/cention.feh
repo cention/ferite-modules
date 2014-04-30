@@ -42,11 +42,17 @@ class CentionChatQueue extends ChatQueue implements ChatQueueProtocol {
 		return assignedAgent;
 	}
 
+	function constructor {
+		.log('(Cention) Invoking: constructor');
+	}
 	function isOpen( object area ) {
+		.log('(Cention) Invoking: isOpen');
 		return true;
 	}
 	function addChat( object chat ) {
-		object assignedAgent = ._assignAgent(chat.area);
+		object assignedAgent;
+		.log('(Cention) Invoking: addChat');
+		assignedAgent = ._assignAgent(chat.area);
 		if( assignedAgent ) {
 			chat.setValue('status', Workflow.ChatSession.STATUS_STARTED);
 			chat.setValue('user', assignedAgent);
@@ -58,17 +64,24 @@ class CentionChatQueue extends ChatQueue implements ChatQueueProtocol {
 		return true;
 	}
 	function endChat( object chat ) {
+		.log('(Cention) Invoking: endChat');
 		.advanceQueue();
 		return true;
 	}
 	function hangUpChat( object chat ) {
+		.log('(Cention) Invoking: hangUpChat');
 		.advanceQueue();
 		return true;
 	}
 	function advanceQueue() {
-		array allAreaIDs = Workflow.SystemGroup.areasFromCache(.currentSystemGroup());
-		array availableUserIDs = Workflow.User.availableForChatList(allAreaIDs);
+		array allAreaIDs;
+		array availableUserIDs;
 		object nextChat;
+
+		.log('(Cention) Invoking: advanceQueue');
+
+		allAreaIDs = Workflow.SystemGroup.areasFromCache(.currentSystemGroup());
+		availableUserIDs = Workflow.User.availableForChatList(allAreaIDs);
 
 		availableUserIDs.each() using ( userID ) {
 			object user = Workflow.User.load(userID['workflow_user_id']);
