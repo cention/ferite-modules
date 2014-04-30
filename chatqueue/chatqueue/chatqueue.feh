@@ -14,8 +14,30 @@ protocol ChatQueueProtocol {
 
 abstract class ChatQueue {
 	number systemgroup;
+	object logFile;
 	function setSystemGroup( number systemgroup ) .systemgroup = systemgroup;
 	function currentSystemGroup() return .systemgroup;
+	function log( string text ) {
+		if( not .logFile ) {
+			string logFilePath = "/cention/logs/ChatQueueServer-${.systemgroup}.log";
+			if( not Posix.stat(logFilePath) ) {
+				Posix.umask(0);
+				.logFile = File.create(logFilePath, 0775);
+				.logFile = File.open(logFilePath, FileSystem.O_RDWR);
+			} else {
+				.logFile = File.open(logFilePath, FileSystem.O_RDWR);
+			}
+			if( not .logFile ) {
+				raise new Error("Unable to open log file ${logFilePath}. Please check permissions");
+			} else {
+				.logFile.seek(.logFile.length(), Stream.SEEK_SET);
+				.logFile.println("---------------------------------------");
+			}
+		}
+		text = '[' + formatDateTime(Date.GMTnow()) + '] ' + text;
+		Console.println( text );
+		.logFile.println(text);
+	}
 }
 
 uses 'chatqueue/solidus';
@@ -124,7 +146,6 @@ class ChatQueueServer {
 				object client = .server.accept();
 				if( client ) {
 					array _request = .readRequest(client);
-					Console.println('' + _request);
 					.handleRequest(client, _request);
 				}
 			} while( .running );
