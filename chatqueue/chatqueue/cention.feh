@@ -42,7 +42,8 @@ class CentionChatQueue extends ChatQueue implements ChatQueueProtocol {
 		return assignedAgent;
 	}
 
-	function constructor {
+	function constructor( number systemgroup ) {
+		.setSystemGroup(systemgroup);
 		.log('(Cention) Invoking: constructor');
 	}
 	function isOpen( object area ) {
