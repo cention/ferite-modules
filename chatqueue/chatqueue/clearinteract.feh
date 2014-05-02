@@ -126,7 +126,8 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 		ClearInteract.reportQueueLength(taskIdentifier, queueLength);
 	}
 
-	function constructor {
+	function constructor( number systemgroup ) {
+		.setSystemGroup(systemgroup);
 		.log('(ClearInteract) Invoking: constructor');
 		ClearInteract.host = F('clearinteract.server-address');
 	}

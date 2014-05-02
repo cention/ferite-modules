@@ -1,5 +1,6 @@
 class NoChatQueue extends ChatQueue implements ChatQueueProtocol {
-	function constructor {
+	function constructor( number systemgroup ) {
+		.setSystemGroup(systemgroup);
 		.log('(NoQueue) Invoking: constructor');
 	}
 	function isOpen( object area ) {

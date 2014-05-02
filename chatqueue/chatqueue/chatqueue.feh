@@ -96,10 +96,10 @@ class ChatQueueServer {
 
 		.port = 55500 + systemgroup;
 
-		     if( F('solidus') )       .queue = new SolidusChatQueue();
-		else if( F('clearinteract') ) .queue = new ClearInteractChatQueue();
-		else if( F('chat.queue') )    .queue = new CentionChatQueue();
-		else                          .queue = new NoChatQueue();
+		     if( F('solidus') )       .queue = new SolidusChatQueue(systemgroup);
+		else if( F('clearinteract') ) .queue = new ClearInteractChatQueue(systemgroup);
+		else if( F('chat.queue') )    .queue = new CentionChatQueue(systemgroup);
+		else                          .queue = new NoChatQueue(systemgroup);
 
 		.queue.setSystemGroup(systemgroup);
 	}
