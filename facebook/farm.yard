@@ -2,7 +2,7 @@
 <yard name="facebook">
 
 	<property id="name" value="cention-facebook" />
-	<property id="version" value="3.4" />
+	<property id="version" value="3.6.0" />
 	
 	<collection id="facebook">
 		<property type="prefix" value="$(FeriteModuleSourceDir)" />  

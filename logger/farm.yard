@@ -2,7 +2,7 @@
 <yard name="logger">
 
 	<property id="name" value="cention-logger" />
-	<property id="version" value="3.2" />
+	<property id="version" value="3.6.0" />
 	
 	<collection id="logger">
 		<property type="prefix" value="$(FeriteModuleSourceDir)" />  

@@ -2,7 +2,7 @@
 <yard name="bright">
 
 	<property id="name" value="cention-bright" />
-	<property id="version" value="3.4" />
+	<property id="version" value="3.6.0" />
 	
 	<collection id="bright">
 		<property type="prefix" value="$(FeriteModuleSourceDir)" />

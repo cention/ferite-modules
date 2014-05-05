@@ -2,7 +2,7 @@
 <yard name="DNS">
 
 	<property id="name" value="cention-dns" />
-	<property id="version" value="3.2" />
+	<property id="version" value="3.6.0" />
 
 	<module id="DNS">
 		<list type="source">
