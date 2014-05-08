@@ -86,18 +86,16 @@ class ChatQueueServer {
 		object content;
 		array _response;
 		
-//		monitor {
+		monitor {
 			content = JSON.parse(_request['Content']);
-//		} handle {
-//			_response['error'] = [ 'code' => -2000, 'message' => 'Unable to parse request' ];
-//		} else {
+		} handle {
+			_response['error'] = [ 'code' => -2000, 'message' => 'Unable to parse request' ];
+		} else {
 			// It can go a long time between connections so reconnect
 			// to the Object server.
 			JSON.RPC.reconnect(JSON.RPC.host, JSON.RPC.port);
 			
-//			_response = [ 'error' => null ];
-
-//			monitor {
+			monitor {
 				switch( content.method ) {
 					case 'isOpen':       _response['result'] = .queue.isOpen(Workflow.Area.load(content.params.area)); break;
 					case 'addChat':      _response['result'] = .queue.addChat(Workflow.ChatSession.load(content.params.chat)); break;
@@ -107,10 +105,12 @@ class ChatQueueServer {
 					case 'advanceQueue': _response['result'] = .queue.advanceQueue(); break;
 					default: _response['error'] = [ 'code' => -1000, 'message' => 'No such method' ];
 				}
-//			} handle {
-//				_response['error'] = [ 'code' => -3000, 'message' => 'Internal server error' ];
-//			}
-//		}
+			} handle {
+				_response['error'] = [ 'code' => -3000, 'message' => 'Internal server error' ];
+			} else {
+				_response['error'] = null;
+			}
+		}
 
 		.sendResponse(client, JSON.valueToJSON(_response));
 	}
