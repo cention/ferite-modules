@@ -2,7 +2,6 @@ uses 'externalqueue';
 
 namespace ClearInteract {
 	string host = 'localhost';
-	number port = 8080;
 	
 	function invoke( string url, string f, array parameters, string result ) {
 		array body = [ "${f}Response" => [ "${f}Return" => result ] ];
@@ -38,7 +37,7 @@ namespace ClearInteract {
 	                           string creationTime )
 	{
 		return .invoke(
-			"http://${.host}:${.port}/axis/services/UqfCention",
+			.host,
 			'queueCentionItem',
 			[
 				'ItemId' => (ItemId > 0 ? ItemId : -1),
@@ -63,7 +62,7 @@ namespace ClearInteract {
 	                                   string creationTime )
 	{
 		return .invoke(
-			"http://${.host}:${.port}/axis/services/UqfCention",
+			.host,
 			'queuePersonalCentionItem',
 			[
 				'itemId' => itemId,
@@ -81,7 +80,7 @@ namespace ClearInteract {
 
 	function endCentionItem( number itemId, string reason ) {
 		return .invoke(
-			"http://${.host}:${.port}/axis/services/UqfCention",
+			.host,
 			'endCentionItem',
 			[ 'itemId' => itemId, 'reason' => reason ],
 			'number'
@@ -90,7 +89,7 @@ namespace ClearInteract {
 
 	function pullCentionItem( number itemId ) {
 		return .invoke(
-			"http://${.host}:${.port}/axis/services/UqfCention",
+			.host,
 			'pullCentionItem',
 			[ 'itemId' => itemId, 'reason' => 'Pulled' ],
 			'number'
@@ -99,7 +98,7 @@ namespace ClearInteract {
 
 	function queueCentionSession( number itemId, string taskIdentifier, string url, string creationTime ) {
 		return .invoke(
-			"http://${.host}:${.port}/axis/services/UqfCentionSession",
+			.host,
 			'queueCentionSession',
 			[ 'itemId' => itemId, 'taskIdentifier' => taskIdentifier, 'url' => url, 'creationTime' => creationTime ],
 			'number'
@@ -108,7 +107,7 @@ namespace ClearInteract {
 
 	function endCentionSession( number itemId, string reason ) {
 		return .invoke(
-			"http://${.host}:${.port}/axis/services/UqfCentionSession",
+			.host,
 			'endCentionSession',
 			[ 'itemId' => itemId, 'reason' => reason ],
 			'number'
@@ -117,7 +116,7 @@ namespace ClearInteract {
 
 	function stampCentionItemStarted( number itemId, number sessionItemId, string errandId, string area, string channel, string creationTime ) {
 		return .invoke(
-			"http://${.host}:${.port}/axis/services/UqfCentionSession",
+			.host,
 			'stampCentionItemStarted',
 			[ 'itemId' => itemId, 'sessionItemId' => sessionItemId, 'errandId' => errandId, 'area' => area, 'channel' => channel, 'creationTime' => creationTime ],
 			'number'
@@ -126,7 +125,7 @@ namespace ClearInteract {
 
 	function stampCentionItemEnded( number itemId, number sessionItemId, string reason ) {
 		return .invoke(
-			"http://${.host}:${.port}/axis/services/UqfCentionSession",
+			.host,
 			'stampCentionItemEnded',
 			[ 'itemId' => itemId, 'sessionItemId' => sessionItemId, 'reason' => reason ],
 			'number'
@@ -135,7 +134,7 @@ namespace ClearInteract {
 
 	function reportQueueLength( string taskIdentifier, number queueLength ) {
 		return .invoke(
-			"http://${.host}:${.port}/axis/services/UqfCentionSession",
+			.host,
 			'reportQueueLength',
 			[ 'taskIdentifier' => taskIdentifier, 'queueLength' => queueLength ],
 			'number'
