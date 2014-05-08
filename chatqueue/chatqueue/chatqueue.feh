@@ -117,8 +117,6 @@ class ChatQueueServer {
 			// to the Object server.
 			JSON.RPC.reconnect(JSON.RPC.host, JSON.RPC.port);
 			
-			_response = [ 'error' => null ];
-
 			monitor {
 				switch( content.method ) {
 					case 'isOpen':       _response['result'] = .queue.isOpen(Workflow.Area.load(content.params.area)); break;
@@ -131,6 +129,8 @@ class ChatQueueServer {
 				}
 			} handle {
 				_response['error'] = [ 'code' => -3000, 'message' => 'Internal server error' ];
+			} else {
+				_response['error'] = null;
 			}
 		}
 
