@@ -188,7 +188,7 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 		return result;
 	}
 	function advanceQueue() {
-		array allAreaID;
+		array allAreaIDs;
 		array availableUserIDs;
 		object nextChat;
 		object unassignedResource;
