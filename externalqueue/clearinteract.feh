@@ -37,7 +37,7 @@ namespace ClearInteract {
 	                           string creationTime )
 	{
 		return .invoke(
-			.host,
+			.host + '/UqfCention',
 			'queueCentionItem',
 			[
 				'ItemId' => (ItemId > 0 ? ItemId : -1),
@@ -62,7 +62,7 @@ namespace ClearInteract {
 	                                   string creationTime )
 	{
 		return .invoke(
-			.host,
+			.host + '/UqfCention',
 			'queuePersonalCentionItem',
 			[
 				'itemId' => itemId,
@@ -80,7 +80,7 @@ namespace ClearInteract {
 
 	function endCentionItem( number itemId, string reason ) {
 		return .invoke(
-			.host,
+			.host + '/UqfCention',
 			'endCentionItem',
 			[ 'itemId' => itemId, 'reason' => reason ],
 			'number'
@@ -89,7 +89,7 @@ namespace ClearInteract {
 
 	function pullCentionItem( number itemId ) {
 		return .invoke(
-			.host,
+			.host + '/UqfCention',
 			'pullCentionItem',
 			[ 'itemId' => itemId, 'reason' => 'Pulled' ],
 			'number'
@@ -98,7 +98,7 @@ namespace ClearInteract {
 
 	function queueCentionSession( number itemId, string taskIdentifier, string url, string creationTime ) {
 		return .invoke(
-			.host,
+			.host + '/UqfCentionSession',
 			'queueCentionSession',
 			[ 'itemId' => itemId, 'taskIdentifier' => taskIdentifier, 'url' => url, 'creationTime' => creationTime ],
 			'number'
@@ -107,7 +107,7 @@ namespace ClearInteract {
 
 	function endCentionSession( number itemId, string reason ) {
 		return .invoke(
-			.host,
+			.host + '/UqfCentionSession',
 			'endCentionSession',
 			[ 'itemId' => itemId, 'reason' => reason ],
 			'number'
@@ -116,7 +116,7 @@ namespace ClearInteract {
 
 	function stampCentionItemStarted( number itemId, number sessionItemId, string errandId, string area, string channel, string creationTime ) {
 		return .invoke(
-			.host,
+			.host + '/UqfCentionSession',
 			'stampCentionItemStarted',
 			[ 'itemId' => itemId, 'sessionItemId' => sessionItemId, 'errandId' => errandId, 'area' => area, 'channel' => channel, 'creationTime' => creationTime ],
 			'number'
@@ -125,7 +125,7 @@ namespace ClearInteract {
 
 	function stampCentionItemEnded( number itemId, number sessionItemId, string reason ) {
 		return .invoke(
-			.host,
+			.host + '/UqfCentionSession',
 			'stampCentionItemEnded',
 			[ 'itemId' => itemId, 'sessionItemId' => sessionItemId, 'reason' => reason ],
 			'number'
@@ -134,7 +134,7 @@ namespace ClearInteract {
 
 	function reportQueueLength( string taskIdentifier, number queueLength ) {
 		return .invoke(
-			.host,
+			.host + '/UqfCentionSession',
 			'reportQueueLength',
 			[ 'taskIdentifier' => taskIdentifier, 'queueLength' => queueLength ],
 			'number'
