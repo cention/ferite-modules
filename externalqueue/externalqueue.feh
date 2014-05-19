@@ -38,7 +38,10 @@ namespace ExternalQueueInterface {
 			ExternalQueueInterface.enable(ClearInteractQueue);
 			ClearInteractQueue.configure([
 				'server-address' => (F('clearinteract.server-address') ? F('clearinteract.server-address') : ''),
-				'open-errand-url' => (F('clearinteract.open-errand-url') ? F('clearinteract.open-errand-url') : '')
+				'open-errand-url' => (F('clearinteract.open-errand-url') ? F('clearinteract.open-errand-url') : ''),
+				'include-customerdata-in-stampcentionitemstarted' => (F('clearinteract.include-customerdata-in-stampcentionitemstarted')
+					? F('clearinteract.include-customerdata-in-stampcentionitemstarted')
+					: false)
 			]);
 		} else if( F('solidus') ) {
 			ExternalQueueInterface.enable(SolidusQueue);

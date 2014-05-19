@@ -2,6 +2,7 @@ uses 'externalqueue';
 
 namespace ClearInteract {
 	string host = 'localhost';
+	boolean includeCustomerDataInStampCentionItemStarted = false;
 	
 	function invoke( string url, string f, array parameters, string result ) {
 		array body = [ "${f}Response" => [ "${f}Return" => result ] ];
@@ -114,11 +115,29 @@ namespace ClearInteract {
 		);
 	}
 
-	function stampCentionItemStarted( number itemId, number sessionItemId, string errandId, string area, string channel, string creationTime ) {
+	function stampCentionItemStarted( number itemId,
+	                                  number sessionItemId,
+	                                  string errandId,
+	                                  string area,
+	                                  string channel,
+	                                  string creationTime,
+	                                  string CustomerData )
+	{
+		array parameters = [
+			'itemId' => itemId,
+			'sessionItemId' => sessionItemId,
+			'errandId' => errandId,
+			'area' => area,
+			'channel' => channel,
+			'creationTime' => creationTime
+		];
+		if( .includeCustomerDataInStampCentionItemStarted ) {
+			parameters['CustomerData'] = CustomerData;
+		}
 		return .invoke(
 			.host + '/UqfCentionSession',
 			'stampCentionItemStarted',
-			[ 'itemId' => itemId, 'sessionItemId' => sessionItemId, 'errandId' => errandId, 'area' => area, 'channel' => channel, 'creationTime' => creationTime ],
+			parameters,
 			'number'
 		);
 	}
@@ -151,6 +170,8 @@ class ClearInteractQueue implements ExternalQueue {
 	static function configure( array options ) {
 		if( options.keyExists('server-address') )
 			ClearInteract.host = options['server-address'];
+		if( options.keyExists('include-customerdata-in-stampcentionitemstarted') )
+			ClearInteract.includeCustomerDataInStampCentionItemStarted = options['include-customerdata-in-stampcentionitemstarted'];
 		if( options.keyExists('open-errand-url') )
 			.SystemBaseURL = options['open-errand-url'];
 	}
