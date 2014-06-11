@@ -390,7 +390,7 @@ class SolidusQueue implements ExternalQueue {
 
 		string privateData = .SystemBaseURL + '/solidus/login/-/errand/' + errand.id;
 		number preferredAgentID = (user ? user.solidusAgentID : 0);
-		boolean forceToPreferredAgent = (preferredAgentID ? true : false);
+		boolean forceToPreferredAgent = false;
 		array ivrInfo = [
 			'Errand' => '' + errand.id,
 			'From' => (errand.mail and errand.mail.from
@@ -483,7 +483,10 @@ class SolidusQueue implements ExternalQueue {
 					} else {
 						Logger.info(Logger.APPLICATION_SOLIDUS, "Unable to cancel errand ${errand.id} (${errand.solidusOpenMediaID}) in Solidus");
 					}
-				} else if( status.OpenMediaRequests[0].Status == 'Complete' /* Completed */ or status.OpenMediaRequests[0].Status == 'Cancelled' ) {
+				} else if( status.OpenMediaRequests[0].Status == 'Complete' or
+				           status.OpenMediaRequests[0].Status == 'Cancelled' or
+				           status.OpenMediaRequests[0].Status == 'Failed' )
+				{
 					Logger.info(Logger.APPLICATION_SOLIDUS, "Status in Solidus for errand ${errand.id} (${errand.solidusOpenMediaID}) is '${status.OpenMediaRequests[0].Status}'");
 					failed = false;
 					errand.setValue('queuedInExternal', false);
