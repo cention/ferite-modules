@@ -57,7 +57,7 @@ namespace ChatQueueInterface {
 		}
 	}
 	function _port( number systemgroup ) {
-		return 55500 + systemgroup;
+		return 6660 + systemgroup;
 	}
 	function _sendRequest( string host, number port, string f, array parameters ) {
 		array response;
@@ -94,7 +94,7 @@ class ChatQueueServer {
 		Feature.clearCache();
 		Feature.setGlobalContext('system-group:' + systemgroup);
 
-		.port = 55500 + systemgroup;
+		.port = 6660 + systemgroup;
 
 		     if( F('solidus') )       .queue = new SolidusChatQueue(systemgroup);
 		else if( F('clearinteract') ) .queue = new ClearInteractChatQueue(systemgroup);
