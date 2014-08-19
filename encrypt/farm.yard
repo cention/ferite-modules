@@ -2,7 +2,7 @@
 <yard name="encrypt">
 
 	<property id="name" value="cention-encrypt" />
-	<property id="version" value="3.6.0" />
+	<property id="version" value="3.7" />
 
 	<module id="encrypt">
 		<property type="C">

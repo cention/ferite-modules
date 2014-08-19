@@ -2,7 +2,7 @@
 <yard name="ExternalSearchInterface">
 
 	<property id="name" value="cention-externalsearch" />
-	<property id="version" value="3.6.0" />
+	<property id="version" value="3.7" />
 	
 	<collection id="externalsearch">
 		<list type="module">

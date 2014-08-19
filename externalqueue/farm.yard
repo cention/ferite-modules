@@ -2,7 +2,7 @@
 <yard name="ExternalQueue">
 
 	<property id="name" value="cention-externalqueue" />
-	<property id="version" value="3.6.0" />
+	<property id="version" value="3.7" />
 	
 	<collection id="externalqueue">
 		<property type="prefix" value="$(FeriteModuleSourceDir)" />
