@@ -9,7 +9,7 @@ protocol ChatQueueProtocol {
 	function addChat( object chat );
 	function endChat( object chat );
 	function hangUpChat( object chat );
-	function advanceQueue();
+	function advanceQueue( object area );
 }
 
 abstract class ChatQueue {
@@ -81,7 +81,8 @@ namespace ChatQueueInterface {
 	function addChat( object chat ) return ._sendRequest('localhost', ._port(chat.systemGroup), 'addChat', [ 'chat' => chat.id ]);
 	function endChat( object chat ) return ._sendRequest('localhost', ._port(chat.systemGroup), 'endChat', [ 'chat' => chat.id ]);
 	function hangUpChat( object chat ) return ._sendRequest('localhost', ._port(chat.systemGroup), 'hangUpChat', [ 'chat' => chat.id ]);
-	function advanceQueue( number systemgroup ) return ._sendRequest('localhost', ._port(systemgroup), 'advanceQueue', []);
+	function advanceQueue( number systemgroup, object area ) return ._sendRequest('localhost', ._port(systemgroup), 'advanceQueue', [ 'area' => (area ? area.id : 0) ]);
+	function advanceQueue( number systemgroup ) return .advanceQueue(systemgroup, null);
 }
 
 class ChatQueueServer {
@@ -124,7 +125,7 @@ class ChatQueueServer {
 					case 'endChat':      _response['result'] = .queue.endChat(Workflow.ChatSession.load(content.params.chat)); break;
 					case 'hangUpChat':   _response['result'] = .queue.hangUpChat(Workflow.ChatSession.load(content.params.chat)); break;
 					case 'acceptChat':   _response['result'] = .queue.acceptChat(Workflow.User.load(content.params.user)); break;
-					case 'advanceQueue': _response['result'] = .queue.advanceQueue(); break;
+					case 'advanceQueue': _response['result'] = .queue.advanceQueue(Workflow.Area.load(content.params.area)); break;
 					default: _response['error'] = [ 'code' => -1000, 'message' => 'No such method' ];
 				}
 			} handle {

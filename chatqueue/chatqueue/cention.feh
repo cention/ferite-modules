@@ -74,7 +74,7 @@ class CentionChatQueue extends ChatQueue implements ChatQueueProtocol {
 		.advanceQueue();
 		return true;
 	}
-	function advanceQueue() {
+	function advanceQueue( object area ) {
 		array allAreaIDs;
 		array availableUserIDs;
 		object nextChat;

@@ -30,7 +30,7 @@ class SolidusChatQueue extends ChatQueue implements ChatQueueProtocol {
 		return SolidusQueue.removeChat(chat);
 	}
 
-	function advanceQueue() {
+	function advanceQueue( object area ) {
 		.log('(Solidus) Invoking: advanceQueue');
 		// Do nothing here.
 		// All logic to advance the queue is within the Solidus server.

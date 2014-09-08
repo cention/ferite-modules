@@ -78,7 +78,7 @@ class NoChatQueue extends ChatQueue implements ChatQueueProtocol {
 		.log('(NoQueue) Invoking: acceptChat');
 		return true;
 	}
-	function advanceQueue() {
+	function advanceQueue( object area ) {
 		.log('(NoQueue) Invoking: advanceQueue');
 		return false;
 	}

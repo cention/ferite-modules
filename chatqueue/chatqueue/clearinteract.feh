@@ -4,40 +4,63 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 	function _assignAgent( object area ) {
 		object assignedAgent = null;
 
-		array list = Workflow.User.availableForChatList([ area.id ]);
-		if( list ) {
-			array possibleAgents = [];
+		array allAvailable = Workflow.User.availableForChatList([ area.id ]);
+		if( allAvailable ) {
+			array allAreas = Workflow.SystemGroup.areasFromCache(.currentSystemGroup());
+			array validAvailable = [];
 
-			if( F('chat.assign-to-highest-amount') ) {
-				number highestAmountOfAssignedChats = list[0]['count'];
-				list.each() using ( row ) {
-					if( row['count'] > highestAmountOfAssignedChats ) {
-						highestAmountOfAssignedChats = row['count'];
+			list.each() using ( row ) {
+				boolean valid = true;
+				number userID = row['workflow_user_id'];
+				array areas = Workflow.Area.idListByArrayForUser(allAreas, userID);
+				array chats = Workflow.ChatSession.activeList(.currentSystemGroup(), areas, [ userID ]);
+				chats.each() using ( chat ) {
+					if( chat.area.externalID != area.externalID ) {
+						valid = false;
+						return false; // break
 					}
 				};
+				// An agent is valid if it has no chat sessions or if the chat session
+				// it has all has the same external id (ClearInteract task identifier)
+				if( valid ) {
+					validAvailable[] = row;
+				}
+			};
 
-				list.each() using ( row ) {
-					if( row['count'] == highestAmountOfAssignedChats ) {
-						possibleAgents[] = row['workflow_user_id'];
-					}
-				};
-			} else {
-				number lowestAmountOfAssignedChats = list[0]['count'];
-				list.each() using ( row ) {
-					if( row['count'] < lowestAmountOfAssignedChats ) {
-						lowestAmountOfAssignedChats = row['count'];
-					}
-				};
-				list.each() using ( row ) {
-					if( row['count'] == lowestAmountOfAssignedChats ) {
-						possibleAgents[] = row['workflow_user_id'];
-					}
-				};
-			}
+			if( validAvailable ) {
+				array possibleAgents = [];
 
-			if( possibleAgents ) {
-				number random = Math.randomNumber(0, possibleAgents.size() - 1);
-				assignedAgent = Workflow.User.load(possibleAgents[random]);
+				if( F('chat.assign-to-highest-amount') ) {
+					number highestAmountOfAssignedChats = validAvailable[0]['count'];
+					validAvailable.each() using ( row ) {
+						if( row['count'] > highestAmountOfAssignedChats ) {
+							highestAmountOfAssignedChats = row['count'];
+						}
+					};
+
+					validAvailable.each() using ( row ) {
+						if( row['count'] == highestAmountOfAssignedChats ) {
+							possibleAgents[] = row['workflow_user_id'];
+						}
+					};
+				} else {
+					number lowestAmountOfAssignedChats = validAvailable[0]['count'];
+					validAvailable.each() using ( row ) {
+						if( row['count'] < lowestAmountOfAssignedChats ) {
+							lowestAmountOfAssignedChats = row['count'];
+						}
+					};
+					validAvailable.each() using ( row ) {
+						if( row['count'] == lowestAmountOfAssignedChats ) {
+							possibleAgents[] = row['workflow_user_id'];
+						}
+					};
+				}
+
+				if( possibleAgents ) {
+					number random = Math.randomNumber(0, possibleAgents.size() - 1);
+					assignedAgent = Workflow.User.load(possibleAgents[random]);
+				}
 			}
 		}
 
@@ -46,7 +69,8 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 	function _requestResource( object area, object resource ) {
 		number itemId = -1;
 		string taskIdentifier = area.externalID;
-		string url = F('clearinteract.open-errand-url') + '/chat/answer/-/clearinteract/' + resource.id + '/update/[at_agent_id]';
+		string url = F('clearinteract.open-errand-url') + '/chat/answer/-/clearinteract/area/' + area.id +
+			'/resource/' + resource.id + '/update/[at_agent_id]';
 		string creationTime = Date.localDate(Date.GMTnow() + Date.timezone()).format('%F %H:%M');
 		return ClearInteract.queueCentionSession(itemId, taskIdentifier, url, creationTime);
 	}
@@ -67,6 +91,7 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 
 		resource = new Workflow.ClearInteractAgentResource();
 		resource.setValue('systemgroup', .currentSystemGroup());
+		resource.setValue('taskIdentifier', area.externalID);
 		resource.save();
 
 		itemID = ._requestResource(area, resource);
@@ -148,7 +173,7 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 			._reportQueueLength(chat.area);
 			return true;
 		} else {
-			object unassignedResource = Workflow.ClearInteractAgentResource.currentUnassigned(.currentSystemGroup());
+			object unassignedResource = Workflow.ClearInteractAgentResource.currentUnassigned(chat.area.externalID);
 			if( unassignedResource ) {
 				chat.setValue('status', Workflow.ChatSession.STATUS_WAITING_ON_AGENT);
 				chat.save();
@@ -175,7 +200,7 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 		boolean result;
 		.log('(ClearInteract) Invoking: endChat');
 		result = ._endChat(chat);
-		.advanceQueue();
+		.advanceQueue(chat.area);
 		._reportQueueLength(chat.area);
 		return result;
 	}
@@ -183,12 +208,14 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 		boolean result;
 		.log('(ClearInteract) Invoking: hangUpChat');
 		result = ._endChat(chat);
-		.advanceQueue();
+		.advanceQueue(chat.area);
 		._reportQueueLength(chat.area);
 		return result;
 	}
-	function advanceQueue() {
+	function advanceQueue( object area ) {
 		array allAreaIDs;
+		array allAreas;
+		array validAreaIDs;
 		array availableUserIDs;
 		object nextChat;
 		object unassignedResource;
@@ -196,11 +223,16 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 		.log('(ClearInteract) Invoking: advanceQueue');
 
 		allAreaIDs = Workflow.SystemGroup.areasFromCache(.currentSystemGroup());
-		availableUserIDs = Workflow.User.availableForChatList(allAreaIDs);
+		allAreas = Workflow.Area.byArray(allAreaIDs);
+		allAreas.each() using ( _area ) {
+			if( _area.externalID == area.externalID )
+				validAreaIDs[] = _area.id;
+		};
 
+		availableUserIDs = Workflow.User.availableForChatList(validAreaIDs);
 		availableUserIDs.each() using ( userID ) {
 			object user = Workflow.User.load(userID['workflow_user_id']);
-			array areaIDs = Workflow.Area.idListByArrayForUser(allAreaIDs, user.id);
+			array areaIDs = Workflow.Area.idListByArrayForUser(validAreaIDs, user.id);
 			while( user.canBeAssignedMoreChat(.currentSystemGroup(), areaIDs) ) {
 				nextChat = Workflow.ChatSession.nextUnassignedChat(areaIDs);
 				if( nextChat ) {
@@ -212,8 +244,8 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 			}
 		};
 
-		unassignedResource = Workflow.ClearInteractAgentResource.currentUnassigned(.currentSystemGroup());
-		nextChat = Workflow.ChatSession.nextUnassignedChat(allAreaIDs);
+		unassignedResource = Workflow.ClearInteractAgentResource.currentUnassigned(area.externalID);
+		nextChat = Workflow.ChatSession.nextUnassignedChat(validAreaIDs);
 		if( nextChat ) {
 			// At this point we know that we have at least one unassigned chat.
 			// What we do here is check if there is any agents which do not have
