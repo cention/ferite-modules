@@ -91,6 +91,7 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 
 		resource = new Workflow.ClearInteractAgentResource();
 		resource.setValue('systemgroup', .currentSystemGroup());
+		resource.setValue('area', area);
 		resource.setValue('taskIdentifier', area.externalID);
 		resource.save();
 
@@ -111,6 +112,7 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 		string area = chat.area.name + '/' + chat.area.id;
 		string channel = 'Chat';
 		string creationTime = Date.localDate(Date.GMTnow() + Date.timezone()).format('%F %H:%M');
+		string CustomerData = chat.externalData;
 		number value = ClearInteract.stampCentionItemStarted(itemId, sessionItemId, errandId, area, channel, creationTime);
 		
 		chat.setValue('externalSessionID', user.currentExternalChatSessionID);

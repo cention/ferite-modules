@@ -29,6 +29,15 @@ namespace ClearInteract {
 		return SOAP.RPC.sendRequest(url, ' ' /* String with a space is correct */, message, body);
 	}
 	
+	function getQueuedItemsMapped( string taskIdentifier ) {
+		return .invoke(
+			.host + '/Uqf2',
+			'getQueuedItemsMapped',
+			[ 'taskIdentifier' => taskIdentifier ],
+			'string'
+		);
+	}
+
 	function queueCentionItem( number ItemId,
 	                           string taskIdentifier,
 	                           string url,
