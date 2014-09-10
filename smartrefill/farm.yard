@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<yard name="smartrefill">
+
+	<property id="name" value="cention-smartrefill" />
+	<property id="version" value="3.7.1" />
+	
+	<collection id="smartrefill">
+		<property type="prefix" value="$(FeriteModuleSourceDir)" />  
+
+		<list type="source">
+			<file name="smartrefill.feh" />
+		</list>
+	</collection>
+
+	<phase id="install">
+		<perform action="install" target="smartrefill" />
+	</phase>
+</yard>

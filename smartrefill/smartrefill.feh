@@ -1,0 +1,66 @@
+uses 'curl';
+uses 'string';
+
+namespace SmartRefill {
+	object logClosure;
+	string baseURL = 'https://twww.smartrefill.se/SmsCommunicator';
+	string username;
+	string password;
+
+	function authenticate( string username, string password ) {
+		.username = username;
+		.password = password;
+	}
+
+	function send( string reference, string country, string company, string message, string receiver, string sender ) {
+		string url;
+		object curl;
+		array fields;
+
+		url = .baseURL + '/rest/sms/{0:country}/{1:company}/phone/{2:receiver}/messages/out'.expand(
+				country,
+				company,
+				receiver
+			);
+
+		curl = new Curl.Curl();
+		curl.setOption(Curl.CURLOPT_POST, 1);
+		curl.setOption(Curl.CURLOPT_URL, url);
+		curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
+		curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
+
+		if( .username ) {
+			curl.setOption(Curl.CURLOPT_USERPWD, "${.username}:${.password}");
+		}
+
+		fields[] = "message=${message}";
+		fields[] = "reference=${reference}";
+		if( sender ) {
+			fields[] = "sender=${sender}";
+		}
+		curl.setOption(Curl.CURLOPT_POSTFIELDS, fields.join('&'));
+
+		if( .logClosure ) {
+			.logClosure.invoke(" - Invoking: ${url}");
+		}
+
+		if( curl.exec() ) {
+			string headers = curl.getHeaders();
+			object match = Regexp.match("HTTP/1\.[10] ([0-9]+) ([A-Za-z ]+)", headers);
+			if( match ) {
+				number code = match.capture(0).toNumber();
+				string name = match.capture(1);
+				if( code != 201 ) {
+					raise new Error("Error: ${name} (${code})");
+				}
+			} else {
+				raise new Error("Unknown response");
+			}
+		} else {
+			raise new Error("Error when connecting to: ${url}");			
+		}
+	}
+	function send( string reference, string country, string company, string message, string receiver ) {
+		return .send(reference, country, company, message, receiver, '');
+	}
+}
