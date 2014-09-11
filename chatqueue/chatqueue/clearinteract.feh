@@ -9,7 +9,7 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 			array allAreas = Workflow.SystemGroup.areasFromCache(.currentSystemGroup());
 			array validAvailable = [];
 
-			list.each() using ( row ) {
+			allAvailable.each() using ( row ) {
 				boolean valid = true;
 				number userID = row['workflow_user_id'];
 				array areas = Workflow.Area.idListByArrayForUser(allAreas, userID);
@@ -113,7 +113,7 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 		string channel = 'Chat';
 		string creationTime = Date.localDate(Date.GMTnow() + Date.timezone()).format('%F %H:%M');
 		string CustomerData = chat.externalData;
-		number value = ClearInteract.stampCentionItemStarted(itemId, sessionItemId, errandId, area, channel, creationTime);
+		number value = ClearInteract.stampCentionItemStarted(itemId, sessionItemId, errandId, area, channel, creationTime, CustomerData);
 		
 		chat.setValue('externalSessionID', user.currentExternalChatSessionID);
 		chat.setValue('externalID', value);
