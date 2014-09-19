@@ -193,7 +193,8 @@ class ClearInteractQueue implements ExternalQueue {
 		number itemId = (errand.externalID ? errand.externalID : -1);
 		string taskIdentifier = errand.targetArea.externalID;
 		string agentIdentifier = (user ? user.externalID : '');
-		string url = "${.SystemBaseURL}/workflow/-/external/open/${errand.id}/update/[at_agent_id]";
+		string url = "${.SystemBaseURL}/clearinteract/login/-/errand/${errand.id}/item/[at_external_id]" +
+			"/agent/[at_agent_id]/browser/[at_browser_type]";
 		string errandId = 'errand/' + errand.id;
 		string area = errand.targetArea.name + '/' + errand.targetArea.id;
 		string channel = errand.service.name;

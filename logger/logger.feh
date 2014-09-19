@@ -66,6 +66,11 @@ namespace Logger {
 	 * @type string
 	 */
 	string APPLICATION_SOLIDUS = 'cention-solidus';
+	/**
+	 * @variable APPLICATION_CLEARINTERACT
+	 * @type string
+	 */
+	string APPLICATION_CLEARINTERACT = 'cention-clearinteract';
 	
 	array loggers;
 	function getLogger( string app ) {
