@@ -219,6 +219,7 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 		array allAreas;
 		array validAreaIDs;
 		array availableUserIDs;
+		array validAvailableUserIDs;
 		object nextChat;
 		object unassignedResource;
 
@@ -232,7 +233,25 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 		};
 
 		availableUserIDs = Workflow.User.availableForChatList(validAreaIDs);
-		availableUserIDs.each() using ( userID ) {
+		availableUserIDs.each() using ( row ) {
+			boolean valid = true;
+			number userID = row['workflow_user_id'];
+			array areas = Workflow.Area.idListByArrayForUser(allAreaIDs, userID);
+			array chats = Workflow.ChatSession.activeList(.currentSystemGroup(), areas, [ userID ]);
+			chats.each() using ( chat ) {
+				if( chat.area.externalID != area.externalID ) {
+					valid = false;
+					return false; // break
+				}
+			};
+			// An agent is valid if it has no chat sessions or if the chat session
+			// it has all has the same external id (ClearInteract task identifier)
+			if( valid ) {
+				validAvailableUserIDs[] = row;
+			}
+		};
+
+		validAvailableUserIDs.each() using ( userID ) {
 			object user = Workflow.User.load(userID['workflow_user_id']);
 			array areaIDs = Workflow.Area.idListByArrayForUser(validAreaIDs, user.id);
 			while( user.canBeAssignedMoreChat(.currentSystemGroup(), areaIDs) ) {
