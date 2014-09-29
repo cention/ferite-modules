@@ -59,6 +59,7 @@ namespace Linkedin {
 			curl.setOption(Curl.CURLOPT_POSTFIELDS, '');
 			//curl.setOption(Curl.CURLOPT_VERBOSE, 1);
 			curl.setOption(Curl.CURLOPT_HTTPHEADER, header.join("\n"));
+			curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
 			if( not curl.exec() ) {
 				raise new Error("Error when connecting to: ${baseURI}");
 			}
@@ -76,6 +77,7 @@ namespace Linkedin {
 			curl.setOption(Curl.CURLOPT_POSTFIELDS, '');
 			//curl.setOption(Curl.CURLOPT_VERBOSE, 1);
 			curl.setOption(Curl.CURLOPT_HTTPHEADER, header.join("\n"));
+			curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
 			if( curl.exec() ) {
 				content = curl.getContent();
 				monitor {
@@ -102,6 +104,7 @@ namespace Linkedin {
 			curl.setOption(Curl.CURLOPT_POSTFIELDS, '');
 			//curl.setOption(Curl.CURLOPT_VERBOSE, 1);
 			curl.setOption(Curl.CURLOPT_HTTPHEADER, header.join("\n"));
+			curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
 			if( curl.exec() ) {
 				content = curl.getContent();
 				//Console.println(content); Sys.exit(1);
@@ -130,6 +133,7 @@ namespace Linkedin {
 			//curl.setOption(Curl.CURLOPT_VERBOSE, 1);
 			curl.setOption(Curl.CURLOPT_SSL_VERIFYPEER, 1);
 			curl.setOption(Curl.CURLOPT_HTTPHEADER, header.join("\n"));
+			curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
 			if( curl.exec() ) {
 				content = curl.getContent(); 
 			} 

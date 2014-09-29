@@ -108,6 +108,7 @@ namespace Twitter {
 			//curl.setOption(Curl.CURLOPT_POST, 1);
 			//curl.setOption(Curl.CURLOPT_SSL_VERIFYPEER, 0);
 			/** end **/
+			curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
 			curl.setOption(Curl.CURLOPT_HTTPHEADER, header.join("\n"));
 			if( not curl.exec() ) {
 				raise new Error("Error when connecting to: ${baseURI}");
@@ -127,6 +128,7 @@ namespace Twitter {
 			curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
 			//curl.setOption(Curl.CURLOPT_VERBOSE, 1);
 			curl.setOption(Curl.CURLOPT_SSL_VERIFYPEER, 0);
+			curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
 			if( curl.exec() ) {
 				content = curl.getContent();
 				monitor {
@@ -193,7 +195,8 @@ namespace Twitter {
 			//curl.setOption(Curl.CURLOPT_VERBOSE, 1);
 			curl.setOption(Curl.CURLOPT_SSL_VERIFYPEER, 0);
 			curl.setOption(Curl.CURLOPT_POST, 1);
-			curl.setOption(Curl.CURLOPT_POSTFIELDS, postfield);		
+			curl.setOption(Curl.CURLOPT_POSTFIELDS, postfield);
+			curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
 			if( curl.exec() ) {
 				content = curl.getContent();
 				monitor {
