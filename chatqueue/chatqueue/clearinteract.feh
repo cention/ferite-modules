@@ -225,6 +225,9 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 
 		.log('(ClearInteract) Invoking: advanceQueue');
 
+		if( not area )
+			return;
+
 		allAreaIDs = Workflow.SystemGroup.areasFromCache(.currentSystemGroup());
 		allAreas = Workflow.Area.byArray(allAreaIDs);
 		allAreas.each() using ( _area ) {
