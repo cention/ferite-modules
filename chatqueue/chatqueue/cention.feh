@@ -66,12 +66,12 @@ class CentionChatQueue extends ChatQueue implements ChatQueueProtocol {
 	}
 	function endChat( object chat ) {
 		.log('(Cention) Invoking: endChat');
-		.advanceQueue();
+		.advanceQueue(null);
 		return true;
 	}
 	function hangUpChat( object chat ) {
 		.log('(Cention) Invoking: hangUpChat');
-		.advanceQueue();
+		.advanceQueue(null);
 		return true;
 	}
 	function advanceQueue( object area ) {
