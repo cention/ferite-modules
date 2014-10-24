@@ -225,7 +225,7 @@ class ClearInteractQueue implements ExternalQueue {
 			errand.setValue('externalID', returnItemId);
 			errand.save();
 			return true;
-		} else if( returnItemId == -8 ) {
+		} else if( returnItemId == -5 or returnItemId == -8 ) {
 			// Because of how CI works the queueCentionItem request will fail when it is performed
 			// for Return to inbox, Forward to Agent and Forward to Area.
 			// This is because after the errand has been handled and endCentionItem has been sent 
