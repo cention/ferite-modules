@@ -71,7 +71,7 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 		string taskIdentifier = area.externalID;
 		string url = F('clearinteract.open-errand-url') + '/clearinteract/login/-/chat/area/' + area.id +
 			'/resource/' + resource.id + '/item/[at_external_id]/agent/[at_agent_id]/browser/[at_browser_type]';
-		string creationTime = Date.localDate(Date.GMTnow() + Date.timezone()).format('%F %H:%M');
+		string creationTime = Date.localDate(Date.now()).format('%F %H:%M');
 		return ClearInteract.queueCentionSession(itemId, taskIdentifier, url, creationTime);
 	}
 	function _cancelResource( object resource ) {
@@ -111,7 +111,7 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 		string errandId = 'chat/' + chat.id;
 		string area = chat.area.name + '/' + chat.area.id;
 		string channel = 'Chat';
-		string creationTime = Date.localDate(Date.GMTnow() + Date.timezone()).format('%F %H:%M');
+		string creationTime = Date.localDate(Date.now()).format('%F %H:%M');
 		string CustomerData = chat.externalData;
 		number value = ClearInteract.stampCentionItemStarted(itemId, sessionItemId, errandId, area, channel, creationTime, CustomerData);
 		
