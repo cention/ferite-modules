@@ -198,7 +198,7 @@ class ClearInteractQueue implements ExternalQueue {
 		string errandId = 'errand/' + errand.id;
 		string area = errand.targetArea.name + '/' + errand.targetArea.id;
 		string channel = errand.service.name;
-		string creationTime = Date.localDate(errand.timestampArrive + Date.timezone()).format('%F %H:%M');
+		string creationTime = Date.localDate(errand.timestampArrive).format('%F %H:%M');
 		number returnItemId;
 
 		if( user ) {
@@ -336,7 +336,7 @@ class ClearInteractQueue implements ExternalQueue {
 	static function addChat( object chat ) {
 		object user = (chat.user ? Workflow.User.load(chat.user.id) : null);
 		number sessionItemId = (user ? user.currentExternalChatSessionID : 0);
-		string creationTime = Date.localDate(chat.timestampStarted + Date.timezone()).format('%F %H:%M');
+		string creationTime = Date.localDate(chat.timestampStarted).format('%F %H:%M');
 		boolean saveUser = true;
 
 		if( not user ) {

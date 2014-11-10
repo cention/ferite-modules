@@ -34,7 +34,7 @@ abstract class ChatQueue {
 				.logFile.println("---------------------------------------");
 			}
 		}
-		text = '[' + formatDateTime(Date.GMTnow()) + '] ' + text;
+		text = '[' + formatDateTime(Date.now()) + '] ' + text;
 		Console.println( text );
 		.logFile.println(text);
 	}
