@@ -2,7 +2,7 @@
 <yard name="ChatQueue">
 
 	<property id="name" value="cention-chatqueue" />
-	<property id="version" value="3.7.1" />
+	<property id="version" value="3.7.2" />
 	
 	<collection id="externalqueue">
 		<list type="module">
