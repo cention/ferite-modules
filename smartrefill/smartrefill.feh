@@ -3,7 +3,7 @@ uses 'string';
 
 namespace SmartRefill {
 	object logClosure;
-	string baseURL = 'https://twww.smartrefill.se/SmsCommunicator';
+	string baseURL = 'https://service.smartrefill.se/SmsCommunicator';
 	string username;
 	string password;
 
@@ -15,7 +15,7 @@ namespace SmartRefill {
 	function send( string reference, string country, string company, string message, string receiver, string sender ) {
 		string url;
 		object curl;
-		array fields;
+		array parameters;
 
 		url = .baseURL + '/rest/sms/{0:country}/{1:company}/phone/{2:receiver}/messages/out'.expand(
 				country,
@@ -23,22 +23,24 @@ namespace SmartRefill {
 				receiver
 			);
 
+		parameters[] = "reference=${reference}";
+		parameters[] = "message=" + message.urlEncode();
+		if( sender ) {
+			parameters[] = "sender=${sender}";
+		}
+
+		url = url + '?' + parameters.join('&');
+
 		curl = new Curl.Curl();
 		curl.setOption(Curl.CURLOPT_POST, 1);
 		curl.setOption(Curl.CURLOPT_URL, url);
 		curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
 		curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
+		curl.setOption(Curl.CURLOPT_POSTFIELDS, '');
 
 		if( .username ) {
 			curl.setOption(Curl.CURLOPT_USERPWD, "${.username}:${.password}");
 		}
-
-		fields[] = "message=${message}";
-		fields[] = "reference=${reference}";
-		if( sender ) {
-			fields[] = "sender=${sender}";
-		}
-		curl.setOption(Curl.CURLOPT_POSTFIELDS, fields.join('&'));
 
 		if( .logClosure ) {
 			.logClosure.invoke(" - Invoking: ${url}");
