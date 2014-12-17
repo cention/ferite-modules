@@ -200,45 +200,50 @@ class ClearInteractQueue implements ExternalQueue {
 		string channel = errand.service.name;
 		string creationTime = Date.localDate(errand.timestampArrive).format('%F %H:%M');
 		number returnItemId;
+		object action = Workflow.ClearInteractAction.byErrand(errand.id);
 
-		if( user ) {
-			returnItemId = ClearInteract.queuePersonalCentionItem(itemId,
-			                                                      taskIdentifier,
-			                                                      agentIdentifier,
-			                                                      url,
-			                                                      errandId,
-			                                                      area,
-			                                                      channel,
-			                                                      creationTime);
-		} else {
-			returnItemId = ClearInteract.queueCentionItem(itemId,
-			                                              taskIdentifier,
-			                                              url,
-			                                              errandId,
-			                                              area,
-			                                              channel,
-			                                              creationTime);
+		if( not action ) {
+			if( user ) {
+				returnItemId = ClearInteract.queuePersonalCentionItem(itemId,
+				                                                      taskIdentifier,
+				                                                      agentIdentifier,
+				                                                      url,
+				                                                      errandId,
+				                                                      area,
+				                                                      channel,
+				                                                      creationTime);
+			} else {
+				returnItemId = ClearInteract.queueCentionItem(itemId,
+				                                              taskIdentifier,
+				                                              url,
+				                                              errandId,
+				                                              area,
+				                                              channel,
+				                                              creationTime);
+			}
+
+			if( returnItemId > 0 ) {
+				errand.setValue('queuedInExternal', true);
+				errand.setValue('externalID', returnItemId);
+				errand.save();
+				return true;
+			} else if( returnItemId == -5 or returnItemId == -8 ) {
+				// Because of how CI works the queueCentionItem request will fail when it is performed
+				// for Return to inbox, Forward to Agent and Forward to Area.
+				// This is because after the errand has been handled and endCentionItem has been sent
+				// the agent which handled the errand goes into a post-handle state.
+				// The agent can be in this state from a couple of seconds to a couple of minutes.
+				// During this time CI consider the errand still allocated to the agent.
+				// This means that the re-queue attempt will fail.
+				// Whe handle this by saving the request parameters which can later
+				// be picked up by a background script that tries to re-run the request.
+				// Since that will eventually succeed true is returned here so that the code
+				// which calls this function treats it as a success.
+				action = new Workflow.ClearInteractAction();
+			}
 		}
 
-		if( returnItemId > 0 ) {
-			errand.setValue('queuedInExternal', true);
-			errand.setValue('externalID', returnItemId);
-			errand.save();
-			return true;
-		} else if( returnItemId == -5 or returnItemId == -8 ) {
-			// Because of how CI works the queueCentionItem request will fail when it is performed
-			// for Return to inbox, Forward to Agent and Forward to Area.
-			// This is because after the errand has been handled and endCentionItem has been sent 
-			// the agent which handled the errand goes into a post-handle state.
-			// The agent can be in this state from a couple of seconds to a couple of minutes.
-			// During this time CI consider the errand still allocated to the agent.
-			// This means that the re-queue attempt will fail.
-			// Whe handle this by saving the request parameters which can later
-			// be picked up by a background script that tries to re-run the request.
-			// Since that will eventually succeed true is returned here so that the code
-			// which calls this function treats it as a success.
-
-			object action = new Workflow.ClearInteractAction();
+		if( action ) {
 			action.setValue('systemgroup', Workflow.SystemGroup.minimalByAreaID(errand.targetArea.id).id);
 			action.setValue('type', Workflow.ClearInteractAction.ACTION_QUEUE_ITEM);
 			action.setValue('errand', errand);
