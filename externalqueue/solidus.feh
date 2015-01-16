@@ -26,8 +26,10 @@ class OpenMediaRequest {
 	string Status;
 	number TenantID;
 	string TimeStamp;
+	number QueuePosition;
+	number ServiceGroupID;
 
-	[rpc_import 'AgentID:number', 'ID:number' , 'LogonID:number' , 'Status:string' , 'TenantID:number' , 'TimeStamp:string'];
+	[rpc_import 'AgentID:number', 'ID:number' , 'LogonID:number' , 'Status:string' , 'TenantID:number' , 'TimeStamp:string', 'QueuePosition:number', 'ServiceGroupID:number'];
 }
 
 class GetServiceGroupStatusResult {
