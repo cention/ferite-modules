@@ -189,7 +189,7 @@ class ClearInteractQueue implements ExternalQueue {
 		// Do nothing.
 	}
 	
-	static function addErrand( object errand, object user ) {
+	static function addErrand( object errand, object user, number type ) {
 		number itemId = (errand.externalID ? errand.externalID : -1);
 		string taskIdentifier = errand.targetArea.externalID;
 		string agentIdentifier = (user ? user.externalID : '');

@@ -397,7 +397,7 @@ class SolidusQueue implements ExternalQueue {
 		};
 	}
 
-	static function addErrand( object errand, object user ) {
+	static function addErrand( object errand, object user, number type ) {
 		object area = Workflow.Area.load(errand.targetArea.id);
 		object systemgroup = Workflow.SystemGroup.minimalByAreaID(errand.targetArea.id);
 		object setting = Workflow.SolidusChannelSetting.byChannel(systemgroup.id, errand.service.type);
