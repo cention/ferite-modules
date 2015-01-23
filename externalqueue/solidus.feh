@@ -402,6 +402,7 @@ class SolidusQueue implements ExternalQueue {
 		object systemgroup = Workflow.SystemGroup.minimalByAreaID(errand.targetArea.id);
 		object setting = Workflow.SolidusChannelSetting.byChannel(systemgroup.id, errand.service.type);
 
+		number serviceGroupID = area.solidusServiceGroupID;
 		string privateData = .SystemBaseURL + '/solidus/login/-/errand/' + errand.id;
 		number preferredAgentID = (user ? user.solidusAgentID : 0);
 		boolean forceToPreferredAgent = false;
@@ -419,11 +420,17 @@ class SolidusQueue implements ExternalQueue {
 		object result;
 		string fault;
 
+		if( area.solidusPrioritizedServiceGroupID and
+			(errand.reply or type == Workflow.Errand.ACTION_EXTERNAL_EXPERT_ANSWER) )
+		{
+			serviceGroupID = area.solidusPrioritizedServiceGroupID;
+		}
+
 		setting and ._setOptions(setting);
 
-		Logger.info(Logger.APPLICATION_SOLIDUS, "Sending add request with preferredAgentID as ${preferredAgentID} for Workflow.Errand(${errand.id}).");
+		Logger.info(Logger.APPLICATION_SOLIDUS, "Sending add request with serviceGroupID as ${serviceGroupID} and preferredAgentID as ${preferredAgentID} for Workflow.Errand(${errand.id}).");
 
-		result = Solidus.addRequest(area.solidusServiceGroupID, preferredAgentID, forceToPreferredAgent, privateData, ivrInfo, typeOfSession, fault);
+		result = Solidus.addRequest(serviceGroupID, preferredAgentID, forceToPreferredAgent, privateData, ivrInfo, typeOfSession, fault);
 
 		if( (fault == "InvalidDataException") || (fault == "NoLicenseFault") ||
 			(fault == "RouterDisconnectedFault") || (fault == "InvalidUserFault")){
