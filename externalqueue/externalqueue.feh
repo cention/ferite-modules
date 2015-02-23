@@ -2,7 +2,7 @@ protocol ExternalQueue {
 	static function name();
 	static function configure( array options );
 	static function finaliseActions();
-	static function addErrand( object errand, object user );
+	static function addErrand( object errand, object user, number type );
 	static function removeErrand( object errand, number type, boolean wasOpenedByExternalSystem );
 	static function pullErrand( object errand);
 	static function neutralForwardErrandToAgent();
@@ -57,10 +57,13 @@ namespace ExternalQueueInterface {
 		return .queue.finaliseActions();
 	}
 	function addErrand( object errand ) {
-		return .queue.addErrand(errand, null);
+		return .queue.addErrand(errand, null, 1);
 	}
 	function addErrand( object errand, object user ) {
-		return .queue.addErrand(errand, user);
+		return .queue.addErrand(errand, user, 1);
+	}
+	function addErrand( object errand, object user, number type ) {
+		return .queue.addErrand(errand, user, type);
 	}
 	function removeErrand( object errand ) {
 		return .queue.removeErrand(errand, 0, false);
