@@ -421,7 +421,8 @@ class SolidusQueue implements ExternalQueue {
 		string fault;
 
 		if( area.solidusPrioritizedServiceGroupID and
-			(errand.reply or type == Workflow.Errand.ACTION_EXTERNAL_EXPERT_ANSWER or
+			(errand.reply or user or
+			 type == Workflow.Errand.ACTION_EXTERNAL_EXPERT_ANSWER or
 			 type == Workflow.Errand.ACTION_AGENT_FORWARD) )
 		{
 			serviceGroupID = area.solidusPrioritizedServiceGroupID;
