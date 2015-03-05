@@ -58,8 +58,29 @@ class ClearInteractChatQueue extends ChatQueue implements ChatQueueProtocol {
 				}
 
 				if( possibleAgents ) {
-					number random = Math.randomNumber(0, possibleAgents.size() - 1);
-					assignedAgent = Workflow.User.load(possibleAgents[random]);
+					boolean chooseRandom = (F('chat.assign-to-highest-allowed') ? false : true);
+					if( chooseRandom ) {
+						number random = Math.randomNumber(0, possibleAgents.size() - 1);
+						assignedAgent = Workflow.User.load(possibleAgents[random]);
+					} else {
+						array agents = [];
+						array agentsWithHighestChatAmount = [];
+						number highestAllowedChat = 0;
+						number random = 0;
+						possibleAgents.each() using ( id ) {
+							object agent = Workflow.User.load(id);
+							agents["$id"] = agent;
+							if( agent.allowedChatAmount > highestAllowedChat )
+								highestAllowedChat = agent.allowedChatAmount;
+						};
+						possibleAgents.each() using ( id ) {
+							object agent = agents["$id"];
+							if( agent.allowedChatAmount == highestAllowedChat )
+								agentsWithHighestChatAmount[] = agent.id;
+						};
+						random = Math.randomNumber(0, agentsWithHighestChatAmount.size() - 1);
+						assignedAgent = Workflow.User.load(agentsWithHighestChatAmount[random]);
+					}
 				}
 			}
 		}
