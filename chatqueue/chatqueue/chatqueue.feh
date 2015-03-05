@@ -86,29 +86,47 @@ namespace ChatQueueInterface {
 }
 
 class ChatQueueServer {
+	number systemGroup;
+	string queueName;
 	object queue;
 	object server;
 	number port;
 	boolean running;
 
 	function constructor( number systemgroup ) {
-		Feature.clearCache();
-		Feature.setGlobalContext('system-group:' + systemgroup);
-
+		.queueName = 'noqueue';
+		.systemGroup = systemgroup;
 		.port = 6660 + systemgroup;
-
-		     if( F('solidus') )       .queue = new SolidusChatQueue(systemgroup);
-		else if( F('clearinteract') ) .queue = new ClearInteractChatQueue(systemgroup);
-		else if( F('chat.queue') )    .queue = new CentionChatQueue(systemgroup);
-		else                          .queue = new NoChatQueue(systemgroup);
-
-		.queue.setSystemGroup(systemgroup);
 	}
 
 	function handleRequest( object client, array _request ) {
+		string newQueueName;
 		object content;
 		array _response;
-		
+
+		Feature.clearCache();
+		Feature.setGlobalContext('system-group:' + .systemGroup);
+
+		     if( F('solidus') )       newQueueName = 'solidus';
+		else if( F('clearinteract') ) newQueueName = 'clearinteract';
+		else if( F('chat.queue') )    newQueueName = 'cention';
+		else                          newQueueName = 'noqueue';
+
+		if( not .queueName.compareCase(newQueueName) ) {
+			.queueName = newQueueName;
+			.queue = null;
+		}
+
+		if( not .queue ) {
+			switch( .queueName ) {
+				case 'solidus':       .queue = new SolidusChatQueue(.systemGroup); break;
+				case 'clearinteract': .queue = new ClearInteractChatQueue(.systemGroup); break;
+				case 'cention':       .queue = new CentionChatQueue(.systemGroup); break;
+				case 'noqueue':       .queue = new NoChatQueue(.systemGroup); break;
+			}
+			.queue.setSystemGroup(.systemGroup);
+		}
+
 		monitor {
 			content = JSON.parse(_request['Content']);
 		} handle {
