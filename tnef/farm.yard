@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<yard name="tnef">
+
+	<property id="name" value="cention-tnef" />
+	<property id="version" value="1.0" />
+	
+	<collection id="tnef">
+		<list type="module">
+			<file name="tnef.feh" />
+		</list>
+	</collection>
+
+	<phase id="install">
+		<copy source="tnef.module" target="$(FeriteModuleSourceDir)" maintainpath="true" />
+	</phase>
+</yard>

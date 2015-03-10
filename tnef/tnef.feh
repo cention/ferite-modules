@@ -1,0 +1,82 @@
+uses 'filesystem';
+uses 'posix';
+uses 'sys';
+
+class TNEF {
+	static function createTemporaryDirectory() {
+		object process = Posix.openprocess("mktemp -d -q", 'r');
+		string path;
+		if( process ) {
+			path = process.readln().trim(" \t\r\n");
+			process.close();
+		}
+		return path;
+	}
+
+	static function open( string file ) {
+		object tnef = new TNEF();
+		number retval;
+		tnef.file = file;
+		tnef.directory = .createTemporaryDirectory();
+		retval = Sys.system("/cention/bin/tnef --file=${file} --directory=${tnef.directory} --number-backups --save-body --body-pref=ALL");
+		if( retval == 0 )
+			return tnef;
+		return null;
+	}
+
+	string file;
+	string directory;
+
+	function destructor() {
+		Directory.remove(.directory, true);
+	}
+
+	function hasBody( string type ) {
+		object file = File.open(.directory + '/message.' + type);
+		if( file )
+			return true;
+		return false;
+	}
+
+	function hasText() {
+		return .hasBody('txt');
+	}
+
+	function hasHTML() {
+		return .hasBody('html');
+	}
+
+	function hasRTF() {
+		return .hasBody('rtf');
+	}
+
+	function getBody( string type ) {
+		object file = File.open(.directory + '/message.' + type);
+		if( file )
+			return file.toString();
+		return '';
+	}
+
+	function getText() {
+		return .getBody('txt');
+	}
+
+	function getHTML() {
+		return .getBody('html');
+	}
+
+	function getRTF() {
+		return .getBody('rtf');
+	}
+
+	function getAttachments() {
+		array bodies = [ 'message.txt' => true, 'message.html' => true, 'message.rtf' => true ];
+		array list = [];
+		object directory = Directory.open(.directory);
+		directory.toArray().each() using ( file ) {
+			if( not bodies.keyExists(file ) )
+				list[] = file;
+		};
+		return list;
+	}
+}
