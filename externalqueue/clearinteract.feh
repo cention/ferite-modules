@@ -264,6 +264,7 @@ class ClearInteractQueue implements ExternalQueue {
 	}
 	
 	static function removeErrand( object errand, number type, boolean wasOpenedByExternalSystem ) {
+		object action = Workflow.ClearInteractAction.byErrand(errand.id);
 		number itemId;
 		string reason;
 		switch( type ) {
@@ -275,6 +276,9 @@ class ClearInteractQueue implements ExternalQueue {
 			case Workflow.Errand.ACTION_FOLDER_FORWARD: reason = 'Moved to Folder'; break;
 			case Workflow.Errand.ACTION_INBOX_RETURN:   reason = 'Returned to Inbox'; break;
 			default:                                    reason = 'Pulled'; break;
+		}
+		if( action ) {
+			action.delete();
 		}
 		itemId = ClearInteract.endCentionItem(errand.externalID, reason);
 		if( itemId == errand.externalID ) {
