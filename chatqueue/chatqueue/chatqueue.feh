@@ -104,6 +104,10 @@ class ChatQueueServer {
 		object content;
 		array _response;
 
+		// It can go a long time between connections so reconnect
+		// to the Object server.
+		JSON.RPC.reconnect(JSON.RPC.host, JSON.RPC.port);
+
 		Feature.clearCache();
 		Feature.setGlobalContext('system-group:' + .systemGroup);
 
@@ -132,10 +136,6 @@ class ChatQueueServer {
 		} handle {
 			_response['error'] = [ 'code' => -2000, 'message' => 'Unable to parse request' ];
 		} else {
-			// It can go a long time between connections so reconnect
-			// to the Object server.
-			JSON.RPC.reconnect(JSON.RPC.host, JSON.RPC.port);
-			
 			monitor {
 				switch( content.method ) {
 					case 'isOpen':       _response['result'] = .queue.isOpen(Workflow.Area.load(content.params.area)); break;
