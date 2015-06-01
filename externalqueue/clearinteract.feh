@@ -257,6 +257,9 @@ class ClearInteractQueue implements ExternalQueue {
 			action.setValue('creationTime', creationTime);
 			action.save();
 
+			errand.setValue('queuedInExternal', true);
+			errand.save();
+
 			return true;
 		}
 
@@ -265,36 +268,48 @@ class ClearInteractQueue implements ExternalQueue {
 	
 	static function removeErrand( object errand, number type, boolean wasOpenedByExternalSystem ) {
 		object action = Workflow.ClearInteractAction.byErrand(errand.id);
-		number itemId;
-		string reason;
-		switch( type ) {
-			case Workflow.Errand.ACTION_ANSWER:         reason = 'Answered'; break;
-			case Workflow.Errand.ACTION_DELETE:         reason = 'Deleted'; break;
-			case Workflow.Errand.ACTION_SAVE:           reason = 'Saved'; break;
-			case Workflow.Errand.ACTION_AGENT_FORWARD:  reason = 'Forwarded to Agent'; break;
-			case Workflow.Errand.ACTION_AREA_FORWARD:   reason = 'Forwarded to Area'; break;
-			case Workflow.Errand.ACTION_FOLDER_FORWARD: reason = 'Moved to Folder'; break;
-			case Workflow.Errand.ACTION_INBOX_RETURN:   reason = 'Returned to Inbox'; break;
-			default:                                    reason = 'Pulled'; break;
-		}
 		if( action ) {
 			action.delete();
-		}
-		itemId = ClearInteract.endCentionItem(errand.externalID, reason);
-		if( itemId == errand.externalID ) {
 			errand.setValue('queuedInExternal', false);
 			errand.save();
 			return true;
+		} else {
+			number itemId;
+			string reason;
+			switch( type ) {
+				case Workflow.Errand.ACTION_ANSWER:         reason = 'Answered'; break;
+				case Workflow.Errand.ACTION_DELETE:         reason = 'Deleted'; break;
+				case Workflow.Errand.ACTION_SAVE:           reason = 'Saved'; break;
+				case Workflow.Errand.ACTION_AGENT_FORWARD:  reason = 'Forwarded to Agent'; break;
+				case Workflow.Errand.ACTION_AREA_FORWARD:   reason = 'Forwarded to Area'; break;
+				case Workflow.Errand.ACTION_FOLDER_FORWARD: reason = 'Moved to Folder'; break;
+				case Workflow.Errand.ACTION_INBOX_RETURN:   reason = 'Returned to Inbox'; break;
+				default:                                    reason = 'Pulled'; break;
+			}
+			itemId = ClearInteract.endCentionItem(errand.externalID, reason);
+			if( itemId == errand.externalID ) {
+				errand.setValue('queuedInExternal', false);
+				errand.save();
+				return true;
+			}
 		}
 		return false;
 	}
 	
 	static function pullErrand( object errand ) {
-		number itemId = ClearInteract.pullCentionItem(errand.externalID);
-		if( itemId == errand.externalID or itemId == -1 /* -1 = errand not in CI queue */ ) {
+		object action = Workflow.ClearInteractAction.byErrand(errand.id);
+		if( action ) {
+			action.delete();
 			errand.setValue('queuedInExternal', false);
 			errand.save();
 			return true;
+		} else {
+			number itemId = ClearInteract.pullCentionItem(errand.externalID);
+			if( itemId == errand.externalID or itemId == -1 /* -1 = errand not in CI queue */ ) {
+				errand.setValue('queuedInExternal', false);
+				errand.save();
+				return true;
+			}
 		}
 		return false;
 	}
