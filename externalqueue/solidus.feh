@@ -224,6 +224,9 @@ namespace Solidus {
 	}
 
 	function getOpenMediaRequestStatus( number openMediaID ) {
+		return .getOpenMediaRequestStatus(openMediaID, null);
+	}
+	function getOpenMediaRequestStatus( number openMediaID, object errorCallback ) {
 		object result;
 		number debugID = .debugID();
 
@@ -245,6 +248,7 @@ namespace Solidus {
 		} handle {
 			Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) (GetOpenMediaRequestStatusByID) ( Error) " + .getErrorReason(err.str));
 			result = null;
+			errorCallback and errorCallback.invoke();
 		}
 
 		Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) (GetOpenMediaRequestStatusByID) (Result) " + (result ? result.toString() : "null"));
