@@ -50,6 +50,17 @@ namespace ExternalQueueInterface {
 				'soap-action-url' => (F('solidus.soap-action-url') ? F('solidus.soap-action-url') : ''),
 				'open-errand-url' => (F('solidus.open-errand-url') ? F('solidus.open-errand-url') : '')
 			]);
+		} else if( F('intelecom') ) {
+			ExternalQueueInterface.enable(IntelecomQueue);
+			IntelecomQueue.configure([
+				'server-address' => (F('intelecom.server-address') ? F('intelecom.server-address') : ''),
+				'soap-action-url' => (F('intelecom.soap-action-url') ? F('intelecom.soap-action-url') : ''),
+				'customerkey' => (F('intelecom.customerkey') ? F('intelecom.customerkey') : ''),
+				'username' => (F('intelecom.username') ? F('intelecom.username') : ''),
+				'password' => (F('intelecom.password') ? F('intelecom.password') : ''),
+				'access-point' => (F('intelecom.accesspoint') ? F('intelecom.accesspoint') : ''),
+				'trigger-uri' => (F('intelecom.trigger-uri') ? F('intelecom.trigger-uri') : '')
+			]);
 		}
 	}
 
@@ -119,4 +130,5 @@ namespace ExternalQueueInterface {
 
 uses 'solidus.feh';
 uses 'clearinteract.feh';
+uses 'intelecom.feh';
 

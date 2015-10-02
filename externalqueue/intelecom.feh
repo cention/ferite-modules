@@ -1,0 +1,392 @@
+uses 'externalqueue';
+uses 'logger';
+uses 'math';
+uses 'SOAP';
+uses 'console';
+uses 'string';
+uses 'curl';
+uses 'xml';
+
+class AuthenticateResult {
+	number Code;
+	string Id;
+	string message;
+	
+	string Result;
+
+	[rpc_import 'Result:string', 'Code:number', 'Id:number', 'Message:string'];
+}
+
+
+class RequestAddResult {
+	number Code;
+	string Id;
+	string Message;
+
+	number Result;
+	[rpc_import 'Result:number', 'Code:number', 'Id:number', 'Message:string'];
+}
+
+class RequestDeleteResult{
+	number Code;
+	string Id;
+	string Message;
+	[rpc_import 'Code:number', 'Id:number', 'Message:string'];
+}
+
+class RequestGetResult{
+	number Code;
+	string Id;
+	string Message;
+	string Result;
+	[rpc_import 'Result:string', 'Code:number', 'Id:number', 'Message:string'];
+}
+
+namespace Intelecom {
+	static string serverAddress;
+	static string soapActionURL;
+
+    static function debugID() {
+        Math.srand(Sys.timestamp());
+        return Math.randomNumber(1000, 9999);
+    }
+
+    function readResponseEnvelope( object response, array body ) {
+		object envelope;
+		string responseBody = String.replace(response.body(),
+			"xmlns=\"ContactCentreWebServices\"",
+			"xmlns:ccws=\"ContactCentreWebServices\"");
+		
+		envelope = new SOAP.Envelope(responseBody, body);
+		return envelope;
+    }
+
+	function sendRequest( string url, string action, string content, array body ) {
+		object http = Network.HTTP.post(url);
+		http.headersAdd('Content-Type', 'text/xml; charset=utf-8');
+		action and http.headersAdd('SOAPAction', action);
+		http.payload(content);
+		return .readResponseEnvelope(http.run(), body);
+    }
+
+	function sendCurlRequest(string url, string action, string content, array body ){
+		string response = '';
+		string responseBody = '';
+		array headers = ["Content-Type:text/xml;charset=utf-8"];
+		object curl = new Curl.Curl();
+		object envelope;
+
+		headers[] = "SOAPAction: "+action;
+		curl.setOption(Curl.CURLOPT_URL, url);
+		curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
+		curl.setOption(Curl.CURLOPT_CUSTOMREQUEST,'POST');
+		curl.setOption(Curl.CURLOPT_SSL_VERIFYPEER, 1);
+		curl.setOption(Curl.CURLOPT_HTTPHEADER, headers.join("\n"));
+		curl.setOption(Curl.CURLOPT_TIMEOUT, 60);
+		curl.setOption(Curl.CURLOPT_POSTFIELDS, content);
+		monitor{
+			if( curl.exec() ) {
+				response = curl.getContent();
+				responseBody = String.replace(response,
+				"xmlns=\"ContactCentreWebServices\"",
+				"xmlns:ccws=\"ContactCentreWebServices\"");
+				envelope = new SOAP.Envelope(responseBody, body);
+			}           
+			else {
+    			Console.printlnErr("Error when connecting to: ${url}");
+			} 
+			return envelope;
+		}handle(e){
+			Console.println(e);
+			Console.printlnErr("Error Response ==>"+responseBody);
+			return null;
+		}
+	}
+
+	function setDefaults(string serverAddress, string soapActionURL ) {
+		.serverAddress = serverAddress;
+		.soapActionURL = soapActionURL;
+    }
+
+	function stdHeaders(){
+		string soapRequest = '';
+		soapRequest = '<Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/">';
+    	soapRequest += '<Body xmlns="http://schemas.xmlsoap.org/soap/envelope/">';
+		return soapRequest;
+	}
+	
+	function stdFooters(){
+		return '</Body> </Envelope>';
+	}
+
+	function auth(string customerKey, string userName, string password){
+		number debugID = .debugID();
+		array body = [ "AuthenticateResponse" => 
+						[ "AuthenticateResult" => "AuthenticateResult"]];
+		object envelope;
+		object result;
+		string soapRequest = .stdHeaders();
+		soapRequest += '<Authenticate xmlns="ContactCentreWebServices">';
+		soapRequest += '<customerKey>'+customerKey+'</customerKey>';
+		soapRequest += '<userName>'+userName+'</userName>';
+		soapRequest += '<password>'+password+'</password>';
+		soapRequest += '</Authenticate>';
+		soapRequest += .stdFooters();
+		envelope = .sendCurlRequest(.serverAddress, .soapActionURL + 
+			"/Authenticate", soapRequest, body);
+		if ((envelope != null) &&
+			envelope.variables['body'] && 
+			envelope.variables['body']['procedure-parameters'] &&
+			envelope.variables['body']['procedure-parameters']['AuthenticateResult']){
+			result = envelope.variables['body']['procedure-parameters']['AuthenticateResult'];
+			return result;
+		}
+		return null;
+
+	}
+
+	function addRequest(string token, string customerKey, string from,
+		string subject, string to, string receivedTime, string uri){
+
+		array body = [ "RequestAddResponse" => 
+						[ "RequestAddResult" => "RequestAddResult"]];
+		object envelope;
+		object requestAddResult;
+		string soapRequest=.stdHeaders();
+		soapRequest += '<RequestAdd xmlns="ContactCentreWebServices">';
+		soapRequest += '<accessToken>'+token+'</accessToken>';
+		soapRequest += '<customerKey>'+customerKey+'</customerKey>';
+		soapRequest += '<infoXml>';
+		soapRequest += '<![CDATA[';
+		soapRequest += '<info>';
+		soapRequest += '<from>'+from+'</from>';
+		soapRequest += '<to>'+to+'</to>';
+		soapRequest += '<receivedtime>'+receivedTime+'</receivedtime>';
+		soapRequest += '<subject>'+subject+'</subject>';
+		if( uri.length() > 0 ){
+			soapRequest += '<uri>'+uri+'</uri>';
+		}
+		soapRequest += '</info>';
+		soapRequest += ']]>';
+		soapRequest += '</infoXml>';
+		soapRequest += '</RequestAdd>';
+		soapRequest += .stdFooters();
+		envelope = .sendCurlRequest(.serverAddress, .soapActionURL +
+			'/RequestAdd',soapRequest, body);
+
+		if ((envelope != null) &&
+			envelope.variables['body'] && 
+			envelope.variables['body']['procedure-parameters'] &&
+			envelope.variables['body']['procedure-parameters']['RequestAddResult']){
+			requestAddResult = envelope.variables['body']['procedure-parameters']['RequestAddResult'];
+			return requestAddResult;
+		}
+		return null;
+	}
+
+	function removeErrand(string customerKey, string accessToken,
+		number requestId){
+		array body = [ "RequestDeleteResponse" => 
+						[ "RequestDeleteResult" => "RequestDeleteResult"]];
+		object envelope;
+		object deleteResult;
+		string soapRequest=.stdHeaders();
+		soapRequest += '<RequestDelete xmlns="ContactCentreWebServices">';
+		soapRequest += '<accessToken>'+accessToken+'</accessToken>';
+		soapRequest += '<customerKey>'+customerKey+'</customerKey>';
+		soapRequest += '<requestId>'+requestId+'</requestId>';
+		soapRequest += '</RequestDelete>';
+		soapRequest += .stdFooters();
+		envelope = .sendCurlRequest(.serverAddress, .soapActionURL +
+			'/RequestDelete',soapRequest, body);
+		if ((envelope != null) &&
+			envelope.variables['body'] && 
+			envelope.variables['body']['procedure-parameters'] &&
+			envelope.variables['body']['procedure-parameters']['RequestDeleteResult']){
+			deleteResult = envelope.variables['body']['procedure-parameters']['RequestDeleteResult'];
+			return deleteResult;
+		}
+		return null;
+	}
+
+	function pullErrand(string customerKey, string accessToken,
+		number requestId){
+		array body = [ "RequestGetResponse" => 
+						[ "RequestGetResult" => "RequestGetResult"]];
+		object envelope;
+		object getResult;
+		string soapRequest=.stdHeaders();
+		soapRequest += '<RequestGet xmlns="ContactCentreWebServices">';
+		soapRequest += '<accessToken>'+accessToken+'</accessToken>';
+		soapRequest += '<customerKey>'+customerKey+'</customerKey>';
+		soapRequest += '<requestId>'+requestId+'</requestId>';
+		soapRequest += '</RequestGet>';
+		soapRequest += .stdFooters();
+		envelope = .sendCurlRequest(.serverAddress, .soapActionURL +
+			'/RequestGet',soapRequest, body);
+		if ((envelope != null) &&
+			envelope.variables['body'] && 
+			envelope.variables['body']['procedure-parameters'] &&
+			envelope.variables['body']['procedure-parameters']['RequestGetResult']){
+			getResult = envelope.variables['body']['procedure-parameters']['RequestGetResult'];
+			return getResult;
+		}
+		return null;
+	}
+}
+
+class IntelecomQueue implements ExternalQueue{
+	static string customerKey;
+	static string userName;
+	static string password;
+	static string tokenString;
+	static string accessPoint;
+	static string addUri;
+
+	static function name(){
+		return 'intelecom';
+	}
+
+	static function configure( array options ){
+		if( options.keyExists('server-address') and 
+			options.keyExists('soap-action-url') )
+            Intelecom.setDefaults(options['server-address'], options['soap-action-url']);
+			if( options.keyExists('trigger-uri') )
+				.addUri = options['trigger-uri'];
+			if( options.keyExists('customerkey') )
+				.customerKey = options['customerkey'];
+			if( options.keyExists('username') )
+				.userName = options['username'];
+			if( options.keyExists('password') )
+				.password = options['password'];
+			if( options.keyExists('access-point') )
+				.accessPoint = options['access-point'];
+	}
+
+	static function finaliseActions() {
+		// Do nothing.
+	}
+
+	static function neutralForwardErrandToAgent() {
+		return false;
+	}
+
+	static function authenticate(){
+
+		number debugID = Intelecom.debugID();
+		object result =  Intelecom.auth(.customerKey, .userName, 
+							.password);
+
+		if (result == null){
+			return false;
+		}
+		if (result.Code != 0){
+			Logger.info('cention-intelecom', "[Debug] (${debugID}) (authenticate) code ["+result.Code + "] message ["+result.Message+"]");
+			return false;
+		} else{
+			.tokenString = result.Result;
+			if (.tokenString.length() == 0) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	static function addErrand( object errand, object user, number type ) {
+		number errandId = errand.id;
+		string from;
+		string subject;
+		string to = .accessPoint;
+		string timeZoneName = Workflow.TimeZone.getTimeZoneFromUser(user);
+		string receivedTime = tzLocalDate(errand.timestampArrive, 
+				timeZoneName).format('%d.%m.%Y %H:%M:%S');
+		number externId = 0;
+		object addResult;
+		number debugID = Intelecom.debugID();
+		
+		if (.tokenString.length() == 0) {
+			if (.authenticate() == false){
+				return false;
+			}
+		}
+
+		if (errand.mail){
+			subject = errand.mail.subject;
+			if (errand.mail.from){
+				from = errand.mail.from.emailAddress;
+			}
+		}
+		addResult =  Intelecom.addRequest(.tokenString, .customerKey, from,
+        	subject, to, receivedTime, .addUri);
+		if (addResult == null){
+			return false;
+		}
+		if (addResult.Code != 0){
+			Logger.info('cention-intelecom', "[Debug] (${debugID}) (addErrand) code ["+addResult.Code + "] message ["+addResult.Message+"]");
+			return false;
+		} else {
+			externId = addResult.Result;
+			if (externId > 0) {
+				errand.setValue('externalID', externId);
+				errand.setValue('queuedInExternal', true);
+				errand.save();
+				return true;
+			}
+		}
+		return false;
+	}
+
+	static function removeErrand( object errand, number type, 
+			boolean wasOpenedByExternalSystem ) {
+		object result;
+		number debugID = Intelecom.debugID();
+		if (.tokenString.length() == 0) {
+			if (.authenticate() == false){
+				return false;
+			}
+		}
+
+		result =  Intelecom.removeErrand(.customerKey, .tokenString, 
+			errand.externalID);
+		if (result == null){
+			return false;
+		}
+		if (result.Code != 0) {
+			Logger.info('cention-intelecom', "[Debug] (${debugID}) (removeErrand) code ["+result.Code + "] message ["+result.Message+"]");
+            return false;
+		} else{
+			errand.setValue('queuedInExternal', false);
+			errand.setValue('externalID', 0);
+			errand.save();
+			return true;
+		}
+		return false;
+	}
+
+	static function pullErrand( object errand ) {
+		object result;
+		number debugID = Intelecom.debugID();
+		if (.tokenString.length() == 0) {
+			if (.authenticate() == false){
+				return false;
+			}
+		}
+
+        result =  Intelecom.pullErrand(.customerKey, .tokenString,
+            errand.externalID);
+        if (result == null){
+            return false;
+        }
+        if (result.Code != 0) {
+            Logger.info('cention-intelecom', "[Debug] (${debugID}) (pullErrand) code ["+result.Code + "] message ["+result.Message+"]");
+            return false;
+        } else{
+            errand.setValue('queuedInExternal', false);
+            errand.setValue('externalID', 0);
+            errand.save();
+            return true;
+        }
+
+		return false;
+	}
+}
