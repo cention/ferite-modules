@@ -248,7 +248,7 @@ namespace Solidus {
 		} handle {
 			Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) (GetOpenMediaRequestStatusByID) ( Error) " + .getErrorReason(err.str));
 			result = null;
-			errorCallback and errorCallback.invoke();
+			errorCallback and errorCallback.invoke(err.str);
 		}
 
 		Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) (GetOpenMediaRequestStatusByID) (Result) " + (result ? result.toString() : "null"));
