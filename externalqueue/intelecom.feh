@@ -303,6 +303,7 @@ class IntelecomQueue implements ExternalQueue{
 		number externId = 0;
 		object addResult;
 		number debugID = Intelecom.debugID();
+		string uriString = "";
 		
 		if (.tokenString.length() == 0) {
 			if (.authenticate() == false){
@@ -316,8 +317,9 @@ class IntelecomQueue implements ExternalQueue{
 				from = errand.mail.from.emailAddress;
 			}
 		}
+		uriString = .addUri + "/-/external/open/" + errand.id;
 		addResult =  Intelecom.addRequest(.tokenString, .customerKey, from,
-        	subject, to, receivedTime, .addUri);
+        	subject, to, receivedTime, uriString);
 		if (addResult == null){
 			return false;
 		}

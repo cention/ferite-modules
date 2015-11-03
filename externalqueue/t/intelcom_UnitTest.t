@@ -37,6 +37,7 @@ function addErrand_test_01() {
 	array options = [ 'server-address' => 'http://localhost:12347',
 		'soap-action-url' => 'ContactCentreWebServices/IAgent',
 		'open-errand-url' =>'',
+		'trigger-uri' =>'http://localhost:12347/action',
 		'customerkey'=> '99218',
 		'username' => 'Cention1',
 		'password'=> 'Tobias1',
