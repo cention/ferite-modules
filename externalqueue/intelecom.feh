@@ -34,14 +34,6 @@ class RequestDeleteResult{
 	[rpc_import 'Code:number', 'Id:number', 'Message:string'];
 }
 
-class RequestGetResult{
-	number Code;
-	string Id;
-	string Message;
-	string Result;
-	[rpc_import 'Result:string', 'Code:number', 'Id:number', 'Message:string'];
-}
-
 namespace Intelecom {
 	static string serverAddress;
 	static string soapActionURL;
@@ -208,31 +200,6 @@ namespace Intelecom {
 		}
 		return null;
 	}
-
-	function pullErrand(string customerKey, string accessToken,
-		number requestId){
-		array body = [ "RequestGetResponse" => 
-						[ "RequestGetResult" => "RequestGetResult"]];
-		object envelope;
-		object getResult;
-		string soapRequest=.stdHeaders();
-		soapRequest += '<RequestGet xmlns="ContactCentreWebServices">';
-		soapRequest += '<accessToken>'+accessToken+'</accessToken>';
-		soapRequest += '<customerKey>'+customerKey+'</customerKey>';
-		soapRequest += '<requestId>'+requestId+'</requestId>';
-		soapRequest += '</RequestGet>';
-		soapRequest += .stdFooters();
-		envelope = .sendCurlRequest(.serverAddress, .soapActionURL +
-			'/RequestGet',soapRequest, body);
-		if ((envelope != null) &&
-			envelope.variables['body'] && 
-			envelope.variables['body']['procedure-parameters'] &&
-			envelope.variables['body']['procedure-parameters']['RequestGetResult']){
-			getResult = envelope.variables['body']['procedure-parameters']['RequestGetResult'];
-			return getResult;
-		}
-		return null;
-	}
 }
 
 class IntelecomQueue implements ExternalQueue{
@@ -354,7 +321,7 @@ class IntelecomQueue implements ExternalQueue{
 			}
 		}
 
-        result =  Intelecom.pullErrand(.customerKey, .tokenString,
+        result =  Intelecom.removeErrand(.customerKey, .tokenString,
             errand.externalID);
         if (result == null){
             return false;
@@ -364,7 +331,6 @@ class IntelecomQueue implements ExternalQueue{
             return false;
         } else{
             errand.setValue('queuedInExternal', false);
-            errand.setValue('externalID', 0);
             errand.save();
             return true;
         }
