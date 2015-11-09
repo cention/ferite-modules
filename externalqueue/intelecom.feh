@@ -317,7 +317,7 @@ class IntelecomQueue implements ExternalQueue{
 				from = errand.mail.from.emailAddress;
 			}
 		}
-		uriString = .addUri + "/-/external/open/" + errand.id;
+		uriString = .addUri + "/workflow/-/external/open/" + errand.id;
 		addResult =  Intelecom.addRequest(.tokenString, .customerKey, from,
         	subject, to, receivedTime, uriString);
 		if (addResult == null){
