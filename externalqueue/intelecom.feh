@@ -340,29 +340,9 @@ class IntelecomQueue implements ExternalQueue{
 
 	static function removeErrand( object errand, number type, 
 			boolean wasOpenedByExternalSystem ) {
-		object result;
-		number debugID = Intelecom.debugID();
-		if (.tokenString.length() == 0) {
-			if (.authenticate() == false){
-				return false;
-			}
-		}
-
-		result =  Intelecom.removeErrand(.customerKey, .tokenString, 
-			errand.externalID);
-		if (result == null){
-			return false;
-		}
-		if (result.Code != 0) {
-			Logger.info('cention-intelecom', "[Debug] (${debugID}) (removeErrand) code ["+result.Code + "] message ["+result.Message+"]");
-            return false;
-		} else{
-			errand.setValue('queuedInExternal', false);
-			errand.setValue('externalID', 0);
-			errand.save();
-			return true;
-		}
-		return false;
+		errand.setValue('queuedInExternal', false);
+		errand.save();
+		return true;
 	}
 
 	static function pullErrand( object errand ) {
