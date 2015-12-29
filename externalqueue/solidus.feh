@@ -424,6 +424,9 @@ class SolidusQueue implements ExternalQueue {
 		object result;
 		string fault;
 
+		if( F('force-preferred-agent') ) {
+			forceToPreferredAgent = true;
+		}
 		if( area.solidusPrioritizedServiceGroupID and
 			(user and (F('sort-replies-first.default-yes') and errand.reply) or
 			 type == Workflow.Errand.ACTION_EXTERNAL_EXPERT_ANSWER or
@@ -545,7 +548,11 @@ class SolidusQueue implements ExternalQueue {
 	}
 
 	static function neutralForwardErrandToAgent() {
-		return true;
+		if( F('force-preferred-agent') ) {
+			return false;
+		} else {
+			return true;
+		}
 	}
 
 	static function chatAgentsAvailable( object area ) {
