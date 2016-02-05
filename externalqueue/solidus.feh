@@ -116,15 +116,15 @@ namespace Solidus {
 	}
 	function addRequest( number serviceGroupID, string privateData ) {
 		string fault;
-		return .addRequest(serviceGroupID, 0, false, privateData, [], fault);
+		return .addRequest(serviceGroupID, 0, false, privateData, [], 0, '', fault);
 	}
 	function addRequest( number serviceGroupID, number preferredAgentID, boolean forceToPreferredAgent, string privateData ) {
 		string fault;
-		return .addRequest(serviceGroupID, preferredAgentID, forceToPreferredAgent, privateData, [], 0, fault);
+		return .addRequest(serviceGroupID, preferredAgentID, forceToPreferredAgent, privateData, [], 0, '', fault);
 	}
-	function addRequest( number serviceGroupID, number preferredAgentID, boolean forceToPreferredAgent, string privateData, array ivrInfo, number typeOfSession) {
+	function addRequest( number serviceGroupID, number preferredAgentID, boolean forceToPreferredAgent, string privateData, array ivrInfo, number typeOfSession, string queueStartTime) {
 		string fault;
-		return .addRequest(serviceGroupID, preferredAgentID, forceToPreferredAgent, privateData, ivrInfo, typeOfSession, fault);
+		return .addRequest(serviceGroupID, preferredAgentID, forceToPreferredAgent, privateData, ivrInfo, typeOfSession, queueStartTime, fault);
 	}
 	function addRequest( number serviceGroupID,
 	                     number preferredAgentID,
@@ -132,6 +132,7 @@ namespace Solidus {
 	                     string privateData,
 	                     array ivrInfo,
 	                     number typeOfSession,
+	                     string queueStartTime,
 						 string &fault )
 	{
 		object result;
@@ -139,7 +140,7 @@ namespace Solidus {
 
 		Logger.info(Logger.APPLICATION_SOLIDUS, "[DEBUG] (${debugID}) (AddRequest) (   Run) " +
 			"ForceToPreferredAgent: ${forceToPreferredAgent}, IVRInfo: ${ivrInfo}, PreferredAgentID: ${preferredAgentID}, " +
-			"PrivateData: ${privateData}, ServiceGroupID: ${serviceGroupID}, ServiceGroupName: , TenantID: -1");
+			"PrivateData: ${privateData}, QueueStartTime: ${queueStartTime}, ServiceGroupID: ${serviceGroupID}, ServiceGroupName: , TenantID: -1, TypeOfSession: ${typeOfSession}");
 
 		fault="";
 		monitor {
@@ -149,6 +150,11 @@ namespace Solidus {
 			parameters['IVRInfo'] = [ new IVRInformation('label1', 'data1'), new IVRInformation(), new IVRInformation() ];
 			parameters['PreferredAgentID'] = preferredAgentID;
 			parameters['PrivateData'] = privateData;
+
+			if( queueStartTime ) {
+				parameters['QueueStartTime'] = queueStartTime;
+			}
+
 			parameters['ServiceGroupID'] = serviceGroupID;
 			parameters['ServiceGroupName'] = '';
 			parameters['TenantID'] = -1;
@@ -420,6 +426,7 @@ class SolidusQueue implements ExternalQueue {
 			'Subject' => (errand.message ? errand.message.subject : 'No Subject')
 		];
 		number typeOfSession = (setting ? setting.typeOfSession : 0);
+		string queueStartTime = (F('solidus.queue-start-time') ? tzLocalDate(errand.timestampArrive, 'GMT').format('%FT%T') : '');
 
 		object result;
 		string fault;
@@ -439,7 +446,7 @@ class SolidusQueue implements ExternalQueue {
 
 		Logger.info(Logger.APPLICATION_SOLIDUS, "Sending add request with serviceGroupID as ${serviceGroupID} and preferredAgentID as ${preferredAgentID} for Workflow.Errand(${errand.id}).");
 
-		result = Solidus.addRequest(serviceGroupID, preferredAgentID, forceToPreferredAgent, privateData, ivrInfo, typeOfSession, fault);
+		result = Solidus.addRequest(serviceGroupID, preferredAgentID, forceToPreferredAgent, privateData, ivrInfo, typeOfSession, queueStartTime, fault);
 
 		if( (fault == "InvalidDataException") || (fault == "NoLicenseFault") ||
 			(fault == "RouterDisconnectedFault") || (fault == "InvalidUserFault")){
@@ -664,6 +671,7 @@ class SolidusQueue implements ExternalQueue {
 				}).invoke()
 		];
 		number typeOfSession = (setting ? setting.typeOfSession : 0);
+		string queueStartTime = (F('solidus.queue-start-time') ? tzLocalDate(chat.timestampStarted, 'GMT').format('%FT%T') : '');
 
 		object result;
 
@@ -676,7 +684,8 @@ class SolidusQueue implements ExternalQueue {
 		                            forceToPreferredAgent,
 		                            privateData,
 		                            ivrInfo,
-		                            typeOfSession);
+		                            typeOfSession,
+		                            queueStartTime);
 		if( result and result.OpenMediaID > 0 ) {
 			Logger.info(Logger.APPLICATION_SOLIDUS, "Workflow.ChatSession(${chat.id}) have been successfully" +
 				" queued as ${result.OpenMediaID}. Queue position is ${result.QueuePosition}, EWT is ${result.EWT}," +
