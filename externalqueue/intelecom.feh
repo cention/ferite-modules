@@ -6,6 +6,7 @@ uses 'console';
 uses 'string';
 uses 'curl';
 uses 'xml';
+uses 'date';
 
 class AuthenticateResult {
 	number Code;
@@ -48,7 +49,7 @@ namespace Intelecom {
 		string responseBody = String.replace(response.body(),
 			"xmlns=\"ContactCentreWebServices\"",
 			"xmlns:ccws=\"ContactCentreWebServices\"");
-		
+		Console.printlnErr("[INTELECOM-RESPONSE] " + responseBody);
 		envelope = new SOAP.Envelope(responseBody, body);
 		return envelope;
     }
@@ -68,6 +69,9 @@ namespace Intelecom {
 		object curl = new Curl.Curl();
 		object envelope;
 
+		Console.printlnErr(Date.localDate(Date.now()).format('%F:%T'));
+		Console.printlnErr("[INTELECOM-REQUEST]: $content");
+
 		headers[] = "SOAPAction: "+action;
 		curl.setOption(Curl.CURLOPT_URL, url);
 		curl.setOption(Curl.CURLOPT_RETURNTRANSFER, 1);
@@ -79,6 +83,7 @@ namespace Intelecom {
 		monitor{
 			if( curl.exec() ) {
 				response = curl.getContent();
+				 Console.printlnErr("[INTELECOM-RESPONSE] " + response);
 				responseBody = String.replace(response,
 				"xmlns=\"ContactCentreWebServices\"",
 				"xmlns:ccws=\"ContactCentreWebServices\"");
@@ -263,7 +268,7 @@ class IntelecomQueue implements ExternalQueue{
 		number errandId = errand.id;
 		string from;
 		string subject;
-		string to = .accessPoint;
+		string to = errand.targetArea.externalID;
 		string timeZoneName = Workflow.TimeZone.getTimeZoneFromUser(user);
 		string receivedTime = tzLocalDate(errand.timestampArrive, 
 				timeZoneName).format('%d.%m.%Y %H:%M:%S');
@@ -306,10 +311,29 @@ class IntelecomQueue implements ExternalQueue{
 	}
 
 	static function removeErrand( object errand, number type, 
-			boolean wasOpenedByExternalSystem ) {
+			boolean wasOpenedByExternalSystem, boolean reallySend ) {
+		if(reallySend == true){
+			object result;
+			number debugID = Intelecom.debugID();
+			if (.tokenString.length() == 0) {
+				if (.authenticate() == false){
+				return false;
+				}
+			}
+			
+			result =  Intelecom.removeErrand(.customerKey, .tokenString, 
+			errand.externalID);
+			if (result == null){
+				return false;
+			}
+			if (result.Code != 0) {
+				Logger.info('cention-intelecom', "[Debug] (${debugID}) (removeErrand) code ["+result.Code + "] message ["+result.Message+"]");
+			}
+		}
 		errand.setValue('queuedInExternal', false);
 		errand.save();
 		return true;
+
 	}
 
 	static function pullErrand( object errand ) {

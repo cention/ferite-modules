@@ -266,7 +266,7 @@ class ClearInteractQueue implements ExternalQueue {
 		return false;
 	}
 	
-	static function removeErrand( object errand, number type, boolean wasOpenedByExternalSystem ) {
+	static function removeErrand( object errand, number type, boolean wasOpenedByExternalSystem, boolean reallySend) {
 		object action = Workflow.ClearInteractAction.byErrand(errand.id);
 		if( action ) {
 			action.delete();

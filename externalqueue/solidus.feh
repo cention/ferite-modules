@@ -467,7 +467,7 @@ class SolidusQueue implements ExternalQueue {
 		}
 	}
 
-	static function removeErrand( object errand, number type, boolean wasOpenedByExternalSystem ) {
+	static function removeErrand( object errand, number type, boolean wasOpenedByExternalSystem, boolean reallySend ) {
 		if( wasOpenedByExternalSystem ) {
 			object action = new SolidusCancelRequestAction();
 			action.openMediaID = errand.solidusOpenMediaID;
