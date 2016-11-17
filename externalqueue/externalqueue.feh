@@ -77,10 +77,10 @@ namespace ExternalQueueInterface {
 		return .queue.addErrand(errand, user, type);
 	}
 	function removeErrand( object errand ) {
-		return .queue.removeErrand(errand, 0, false);
+		return .queue.removeErrand(errand, 0, false, true);
 	}
 	function removeErrand( object errand, number type ) {
-		return .queue.removeErrand(errand, type, false);
+		return .queue.removeErrand(errand, type, false, true);
 	}
 	function removeErrand( object errand, number type, boolean wasOpenedByExternalSystem ) {
 		return .queue.removeErrand(errand, type, wasOpenedByExternalSystem,
