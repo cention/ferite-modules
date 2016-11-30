@@ -1,0 +1,13 @@
+ uses "mcrypt.feh","string","console";
+ 
+   string passphrase = "cention";
+   string  password = "ashish";
+   string  encryptedPassword;
+   string  decryptedPassword;
+  
+   encryptedPassword = mCrypt.encryptMcryptography(password , passphrase);
+   Console.println("encrypt:" + "${encryptedPassword}");
+   decryptedPassword = mCrypt.decryptMcryptography(encryptedPassword , passphrase);
+   Console.println("decrypt:" + "${decryptedPassword}");
+  
+   

@@ -1,0 +1,40 @@
+// developed by ashish ghosh. email:ashish_ghosh@cention.se
+
+uses "mcrypt_module","string";
+
+namespace mCrypt{
+    
+    
+	function encryptMcryptography(string password , string passphrase ) {
+	  
+		object mcryptObj = new mcrypt.mcrypt("des", "ecb");
+		string encryptedPassword;
+		monitor {		       		        
+				mcryptObj.keygenarate(passphrase);			
+				encryptedPassword = mcryptObj.encode(password);
+				return encryptedPassword; 
+			}
+		handle {
+			raise new Error("Encryption error to connect in mcrypt .");
+		}		  
+	} 
+	      
+	function decryptMcryptography(string password , string passphrase ) {
+	  
+		object mcryptObj = new mcrypt.mcrypt("des", "ecb");
+		string decryptedPassword;
+		
+		monitor {
+		        if( password ){
+		        
+				mcryptObj.keygenarate(passphrase);			
+				decryptedPassword = mcryptObj.decode(password);
+				return decryptedPassword; 			
+			}
+		}handle{
+			raise new Error(" Decryption error to connect in mcrypt .");
+		}	
+					  
+	} 
+
+}
